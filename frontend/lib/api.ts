@@ -12,7 +12,16 @@ export type AuthenticatedUser = {
   };
 };
 
-type ApiErrorBody = { detail?: string };
+export type OrganizationUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "RESPONSIBLE" | "READER";
+  is_active: boolean;
+  created_at: string;
+};
+
+type ApiErrorBody = { detail?: string | unknown[] };
 
 export class ApiError extends Error {
   constructor(message: string, public readonly status: number) {
@@ -28,7 +37,7 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as ApiErrorBody;
-    throw new ApiError(body.detail ?? "No fue posible completar la solicitud.", response.status);
+    throw new ApiError(typeof body.detail === "string" ? body.detail : "No fue posible completar la solicitud.", response.status);
   }
   return response.json() as Promise<T>;
 }
@@ -44,3 +53,26 @@ export function login(payload: { email: string; password: string }) {
 export function getCurrentUser() {
   return apiRequest<AuthenticatedUser>("/auth/me");
 }
+
+export function getUsers() {
+  return apiRequest<OrganizationUser[]>("/api/v1/users");
+}
+
+export function createUser(payload: { name: string; email: string; password: string; role: OrganizationUser["role"] }) {
+  return apiRequest<OrganizationUser>("/api/v1/users", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function updateUser(userId: string, payload: Partial<Pick<OrganizationUser, "name" | "email" | "role">>) {
+  return apiRequest<OrganizationUser>(`/api/v1/users/${userId}`, { method: "PATCH", body: JSON.stringify(payload) });
+}
+
+export function updateUserStatus(userId: string, is_active: boolean) {
+  return apiRequest<OrganizationUser>(`/api/v1/users/${userId}/status`, { method: "PATCH", body: JSON.stringify({ is_active }) });
+}
+export type Obligation={id:string;title:string;description:string|null;matter:string;regulatory_source:string;article:string|null;deadline:string|null;frequency:string|null;compliance_status:"PENDING"|"IN_PROGRESS"|"COMPLIANT"|"OVERDUE";responsible_user_id:string|null;responsible_user:{id:string;name:string;email:string}|null;is_active:boolean;created_at:string;updated_at:string};
+export function getObligations(filters=""){return apiRequest<Obligation[]>(`/api/v1/obligations${filters}`)}
+export function getObligation(id:string){return apiRequest<Obligation>(`/api/v1/obligations/${id}`)}
+export function createObligation(payload:Record<string,unknown>){return apiRequest<Obligation>("/api/v1/obligations",{method:"POST",body:JSON.stringify(payload)})}
+export function updateObligation(id:string,payload:Record<string,unknown>){return apiRequest<Obligation>(`/api/v1/obligations/${id}`,{method:"PATCH",body:JSON.stringify(payload)})}
+export function updateObligationStatus(id:string,compliance_status:Obligation["compliance_status"]){return apiRequest<Obligation>(`/api/v1/obligations/${id}/status`,{method:"PATCH",body:JSON.stringify({compliance_status})})}
+export function archiveObligation(id:string){return apiRequest<Obligation>(`/api/v1/obligations/${id}/archive`,{method:"PATCH"})}

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models.role import RoleCode
 
@@ -11,6 +11,14 @@ class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     email: EmailStr
     password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("organization_name", "name")
+    @classmethod
+    def validate_display_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized or any(ord(character) < 32 for character in normalized):
+            raise ValueError("El texto contiene caracteres no válidos.")
+        return normalized
 
 
 class LoginRequest(BaseModel):

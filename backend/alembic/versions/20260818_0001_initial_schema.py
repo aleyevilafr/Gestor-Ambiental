@@ -18,9 +18,9 @@ branch_labels = None
 depends_on = None
 
 
-role_code = postgresql.ENUM("ADMIN", "RESPONSIBLE", "READER", name="role_code")
+role_code = postgresql.ENUM("ADMIN", "RESPONSIBLE", "READER", name="role_code", create_type=False)
 compliance_status = postgresql.ENUM(
-    "PENDING", "IN_PROGRESS", "COMPLIANT", "OVERDUE", name="compliance_status"
+    "PENDING", "IN_PROGRESS", "COMPLIANT", "OVERDUE", name="compliance_status", create_type=False
 )
 
 

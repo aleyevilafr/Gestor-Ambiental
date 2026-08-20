@@ -1,14 +1,14 @@
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.core.rut import normalize_chilean_rut
 from app.core.security import hash_password, verify_password
 from app.models.organization import Organization
-from app.models.role import Role, RoleCode
+from app.models.role import RoleCode
 from app.models.user import User
+from app.repositories.auth import add_organization, add_user, get_active_user_by_id, get_active_users_by_email, get_role_by_code
 from app.schemas.auth import AuthenticatedUserResponse, LoginRequest, OrganizationResponse, RegisterRequest
 
 
@@ -30,12 +30,11 @@ def register_organization_and_admin(db: Session, payload: RegisterRequest) -> Us
 
     try:
         with db.begin():
-            admin_role = db.scalar(select(Role).where(Role.code == RoleCode.ADMIN))
+            admin_role = get_role_by_code(db, RoleCode.ADMIN)
             if admin_role is None:
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se encontró el rol administrador.")
             organization = Organization(name=payload.organization_name.strip(), rut=normalized_rut)
-            db.add(organization)
-            db.flush()
+            add_organization(db, organization)
             user = User(
                 organization_id=organization.id,
                 role_id=admin_role.id,
@@ -43,8 +42,7 @@ def register_organization_and_admin(db: Session, payload: RegisterRequest) -> Us
                 email=str(payload.email).lower(),
                 password_hash=hash_password(payload.password),
             )
-            db.add(user)
-            db.flush()
+            add_user(db, user)
             db.refresh(user, attribute_names=["organization", "role"])
     except Exception:
         db.rollback()
@@ -53,13 +51,7 @@ def register_organization_and_admin(db: Session, payload: RegisterRequest) -> Us
 
 
 def authenticate_user(db: Session, payload: LoginRequest) -> User | None:
-    users = list(
-        db.scalars(
-            select(User)
-            .options(joinedload(User.organization), joinedload(User.role))
-            .where(User.email == str(payload.email).lower(), User.is_active.is_(True))
-        )
-    )
+    users = get_active_users_by_email(db, str(payload.email).lower())
     if len(users) != 1 or not verify_password(payload.password, users[0].password_hash):
         return None
     return users[0]
@@ -70,8 +62,4 @@ def get_active_user(db: Session, user_id: str) -> User | None:
         identifier = UUID(user_id)
     except ValueError:
         return None
-    return db.scalar(
-        select(User)
-        .options(joinedload(User.organization), joinedload(User.role))
-        .where(User.id == identifier, User.is_active.is_(True))
-    )
+    return get_active_user_by_id(db, identifier)
