@@ -114,6 +114,16 @@ def test_duplicate_email_is_rejected_within_organization(client: TestClient) -> 
     assert response.status_code == 409
 
 
+def test_email_is_global_unique_and_normalized_for_login(client: TestClient) -> None:
+    register_admin(client, "Admin@Empresa.cl")
+    other = TestClient(app)
+    duplicate = other.post("/auth/register", json={"organization_name": "Otra SpA", "rut": "76.086.428-5", "name": "Otra Admin", "email": "ADMIN@empresa.cl", "password": "ClaveSegura2026!"})
+    login = client.post("/auth/login", json={"email": "ADMIN@EMPRESA.CL", "password": "ClaveSegura2026!"})
+    assert duplicate.status_code == 409
+    assert login.status_code == 200
+    other.close()
+
+
 def test_organization_isolation_blocks_cross_organization_updates(client: TestClient) -> None:
     register_admin(client, "admin-a@empresa.cl", "12.345.678-5")
     user_from_first_organization = create_user(client, "usuario-a@empresa.cl")

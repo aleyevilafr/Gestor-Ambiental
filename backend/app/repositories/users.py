@@ -31,6 +31,9 @@ def get_user_by_email_in_organization(db: Session, organization_id: UUID, email:
         select(User).where(User.organization_id == organization_id, User.email == email)
     )
 
+def get_user_by_email(db: Session, email: str) -> User | None:
+    return db.scalar(select(User).where(User.email == email))
+
 
 def get_role_by_code(db: Session, code: RoleCode) -> Role | None:
     return db.scalar(select(Role).where(Role.code == code))

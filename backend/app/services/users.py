@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.models.user import User
-from app.repositories.users import add_user, get_role_by_code, get_user_by_email_in_organization, get_user_in_organization, list_users_by_organization, save
+from app.repositories.users import add_user, get_role_by_code, get_user_by_email, get_user_in_organization, list_users_by_organization, save
 from app.schemas.user import CreateUserRequest, UpdateUserRequest, UpdateUserStatusRequest, UserResponse
 
 
@@ -27,8 +27,8 @@ def list_organization_users(db: Session, organization_id: UUID) -> list[User]:
 
 def create_organization_user(db: Session, organization_id: UUID, payload: CreateUserRequest) -> User:
     email = str(payload.email).lower()
-    if get_user_by_email_in_organization(db, organization_id, email) is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya existe un usuario con ese correo en la organización.")
+    if get_user_by_email(db, email) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya existe un usuario con ese correo.")
     role = get_role_by_code(db, payload.role)
     if role is None:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El rol seleccionado no existe.")
@@ -55,9 +55,9 @@ def update_organization_user(db: Session, organization_id: UUID, user_id: UUID, 
     changes = payload.model_dump(exclude_unset=True)
     if "email" in changes:
         email = str(changes["email"]).lower()
-        existing_user = get_user_by_email_in_organization(db, organization_id, email)
+        existing_user = get_user_by_email(db, email)
         if existing_user is not None and existing_user.id != user.id:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya existe un usuario con ese correo en la organización.")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ya existe un usuario con ese correo.")
         user.email = email
     if "name" in changes:
         user.name = changes["name"]

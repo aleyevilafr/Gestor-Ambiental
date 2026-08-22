@@ -47,3 +47,5 @@ class Obligation(Base):
     created_by_user: Mapped["User"] = relationship(
         foreign_keys=[created_by_user_id], back_populates="created_obligations"
     )
+    controls: Mapped[list["Control"]] = relationship(back_populates="obligation")
+    evidences: Mapped[list["Evidence"]] = relationship(back_populates="obligation")

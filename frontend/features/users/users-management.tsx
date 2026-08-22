@@ -6,7 +6,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/branding/brand-mark";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { TextField } from "@/components/ui/text-field";
-import { ApiError, createUser, getUsers, type OrganizationUser, updateUser, updateUserStatus } from "@/lib/api";
+import { ApiError, createUser, getCurrentUser, getUsers, type OrganizationUser, updateUser, updateUserStatus } from "@/lib/api";
 
 type UserFormState = {
   name: string;
@@ -30,6 +30,7 @@ export function UsersManagement() {
   const [form, setForm] = useState<UserFormState>(emptyForm);
   const [editingUser, setEditingUser] = useState<OrganizationUser | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   async function loadUsers() {
     setIsLoading(true);
@@ -43,7 +44,9 @@ export function UsersManagement() {
     }
   }
 
-  useEffect(() => { void loadUsers(); }, []);
+  useEffect(() => { getCurrentUser().then((user) => { const allowed=user.role === "ADMIN"; setIsAdmin(allowed); if (allowed) void loadUsers(); }).catch(() => setIsAdmin(false)); }, []);
+
+  if (isAdmin === false) return <main className="min-h-screen bg-[#f7f8fa] p-8"><section className="mx-auto max-w-xl border border-slate-200 bg-white p-8"><h1 className="text-2xl font-semibold text-[#111c30]">Acceso restringido</h1><p className="mt-3 text-slate-600">Solo los administradores pueden gestionar usuarios.</p><Link className="mt-5 inline-block text-sm font-semibold text-[#111c30] underline" href="/dashboard">Volver al dashboard</Link></section></main>;
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,6 +81,7 @@ export function UsersManagement() {
   }
 
   async function toggleStatus(user: OrganizationUser) {
+    if (user.is_active && !window.confirm(`¿Desactivar a ${user.name}? Esta persona perderá acceso a la plataforma.`)) return;
     setError("");
     try {
       const updatedUser = await updateUserStatus(user.id, !user.is_active);

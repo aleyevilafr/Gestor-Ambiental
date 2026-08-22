@@ -76,3 +76,16 @@ export function createObligation(payload:Record<string,unknown>){return apiReque
 export function updateObligation(id:string,payload:Record<string,unknown>){return apiRequest<Obligation>(`/api/v1/obligations/${id}`,{method:"PATCH",body:JSON.stringify(payload)})}
 export function updateObligationStatus(id:string,compliance_status:Obligation["compliance_status"]){return apiRequest<Obligation>(`/api/v1/obligations/${id}/status`,{method:"PATCH",body:JSON.stringify({compliance_status})})}
 export function archiveObligation(id:string){return apiRequest<Obligation>(`/api/v1/obligations/${id}/archive`,{method:"PATCH"})}
+export type Control={id:string;obligation_id:string;title:string;description:string|null;due_date:string|null;status:"PENDING"|"IN_PROGRESS"|"COMPLETED";created_at:string;updated_at:string};
+export type Evidence={id:string;obligation_id:string;control_id:string|null;name:string;description:string|null;evidence_type:"FILE"|"EXTERNAL_LINK";file_url:string|null;external_url:string|null;uploaded_by_user_id:string;uploaded_by_user:{id:string;name:string;email:string};created_at:string};
+export function getControls(obligationId:string){return apiRequest<Control[]>(`/api/v1/obligations/${obligationId}/controls`)}
+export function createControl(obligationId:string,payload:Record<string,unknown>){return apiRequest<Control>(`/api/v1/obligations/${obligationId}/controls`,{method:"POST",body:JSON.stringify(payload)})}
+export function updateControl(id:string,payload:Record<string,unknown>){return apiRequest<Control>(`/api/v1/controls/${id}`,{method:"PATCH",body:JSON.stringify(payload)})}
+export function updateControlStatus(id:string,status:Control["status"]){return apiRequest<Control>(`/api/v1/controls/${id}/status`,{method:"PATCH",body:JSON.stringify({status})})}
+export function getEvidences(obligationId:string){return apiRequest<Evidence[]>(`/api/v1/obligations/${obligationId}/evidences`)}
+export function createEvidence(obligationId:string,payload:Record<string,unknown>){return apiRequest<Evidence>(`/api/v1/obligations/${obligationId}/evidences`,{method:"POST",body:JSON.stringify(payload)})}
+export type DashboardObligation={id:string;title:string;matter:string;deadline:string|null;compliance_status:Obligation["compliance_status"];responsible_name:string|null};
+export type DashboardSummary={total_obligations:number;compliant:number;in_progress:number;pending:number;overdue:number;compliance_percentage:number;attention_obligations:DashboardObligation[];upcoming_obligations:DashboardObligation[]};
+export function getDashboardSummary(){return apiRequest<DashboardSummary>("/api/v1/dashboard/summary")}
+export type ComplianceReport={organization:{id:string;name:string;rut:string};generated_at:string;summary:DashboardSummary;obligations:Array<DashboardObligation & {regulatory_source:string;article:string|null;frequency:string|null;responsible:string|null;controls_count:number;evidences_count:number}>};
+export function getComplianceReport(){return apiRequest<ComplianceReport>("/api/v1/reports/compliance")}

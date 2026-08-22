@@ -39,3 +39,10 @@ def test_registration_rejects_control_characters() -> None:
             email="admin@empresa.cl",
             password="ClaveSegura2026!",
         )
+from fastapi.testclient import TestClient
+from app.main import app
+
+def test_cors_preflight_allows_patch() -> None:
+    response = TestClient(app).options("/api/v1/obligations/example", headers={"Origin":"http://localhost:3000","Access-Control-Request-Method":"PATCH"})
+    assert response.status_code == 200
+    assert "PATCH" in response.headers["access-control-allow-methods"]

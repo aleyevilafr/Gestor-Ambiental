@@ -1,23 +1,26 @@
-import type { Metadata } from "next";
+"use client";
 
-import { BrandMark } from "@/components/branding/brand-mark";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
 import { DashboardGate } from "@/components/auth/dashboard-gate";
+import { getCurrentUser, getDashboardSummary, type AuthenticatedUser, type DashboardObligation, type DashboardSummary } from "@/lib/api";
 
-export const metadata: Metadata = {
-  title: "Dashboard | Gestión de Cumplimiento Ambiental",
-};
+const statusLabel = { COMPLIANT: "Cumplida", IN_PROGRESS: "En proceso", PENDING: "Pendiente", OVERDUE: "Vencida" };
+const statusStyle = { COMPLIANT: "text-emerald-700", IN_PROGRESS: "text-amber-700", PENDING: "text-slate-600", OVERDUE: "text-red-700" };
 
-export default function DashboardPlaceholderPage() {
-  return (
-    <DashboardGate>
-      <main className="flex min-h-screen items-center justify-center bg-[#f7f8fa] px-5 py-10">
-        <section className="w-full max-w-xl border border-slate-200 bg-white p-8 sm:p-10">
-          <BrandMark tone="light" compact />
-          <p className="mt-12 text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Espacio de trabajo</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Dashboard</h1>
-          <p className="mt-4 max-w-md text-[15px] leading-7 text-slate-600">Próximamente podrás visualizar el estado de cumplimiento de tu organización.</p>
-        </section>
-      </main>
-    </DashboardGate>
-  );
+function ObligationList({ items, empty }: { items: DashboardObligation[]; empty: string }) {
+  if (!items.length) return <p className="py-5 text-sm text-slate-500">{empty}</p>;
+  return <ul className="divide-y divide-slate-100">{items.map((item) => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><Link href={`/obligations/${item.id}`} className="font-medium text-[#111c30] hover:underline">{item.title}</Link><p className="mt-1 text-sm text-slate-500">{item.matter}{item.responsible_name ? ` · ${item.responsible_name}` : ""}</p></div><div className="text-right"><p className={`text-sm font-medium ${statusStyle[item.compliance_status]}`}>{statusLabel[item.compliance_status]}</p><p className="mt-1 text-xs text-slate-500">{item.deadline ? new Date(`${item.deadline}T00:00:00`).toLocaleDateString("es-CL") : "Sin fecha límite"}</p></div></li>)}</ul>;
+}
+
+export default function DashboardPage() {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [user, setUser] = useState<AuthenticatedUser | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => { Promise.all([getDashboardSummary(), getCurrentUser()]).then(([dashboard, currentUser]) => { setSummary(dashboard); setUser(currentUser); }).catch((caught) => setError(caught instanceof Error ? caught.message : "No fue posible cargar el dashboard.")); }, []);
+  return <DashboardGate><main className="min-h-screen bg-[#f7f8fa] p-6 sm:p-8"><div className="mx-auto max-w-6xl"><header className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-medium text-slate-500">Resumen de cumplimiento</p><h1 className="mt-2 text-3xl font-semibold text-[#111c30]">Dashboard</h1><p className="mt-2 text-slate-600">Estado general de las obligaciones de tu organización.</p></div>{user?.role === "ADMIN" && <Link href="/obligations/new" className="rounded-lg bg-[#111c30] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1a2943]">Crear obligación</Link>}</header>
+    {!summary && !error && <p className="mt-10 text-sm text-slate-600">Cargando resumen de cumplimiento…</p>}{error && <p className="mt-10 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">{error}</p>}
+    {summary && <>{summary.total_obligations === 0 ? <section className="mt-8 rounded-lg border border-slate-200 bg-white p-8"><h2 className="text-xl font-semibold text-[#111c30]">Aún no hay obligaciones registradas</h2><p className="mt-2 text-slate-600">Cuando registres obligaciones ambientales, aquí podrás revisar su estado de cumplimiento.</p>{user?.role === "ADMIN" && <Link href="/obligations/new" className="mt-5 inline-block text-sm font-semibold text-[#111c30] underline">Crear la primera obligación</Link>}</section> : <><section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">{[["Total obligaciones", summary.total_obligations, "text-[#111c30]"],["Cumplidas", summary.compliant, "text-emerald-700"],["En proceso", summary.in_progress, "text-amber-700"],["Pendientes", summary.pending, "text-slate-600"],["Vencidas", summary.overdue, "text-red-700"]].map(([label, value, color]) => <article key={label as string} className="rounded-lg border border-slate-200 bg-white p-5"><p className="text-sm text-slate-500">{label}</p><p className={`mt-3 text-3xl font-semibold ${color}`}>{value}</p></article>)}</section><section className="mt-6 rounded-lg border border-slate-200 bg-white p-6"><p className="text-sm text-slate-500">Cumplimiento general</p><div className="mt-3 flex items-end justify-between gap-4"><p className="text-4xl font-semibold text-[#111c30]">{summary.compliance_percentage}%</p><p className="text-sm text-slate-500">Obligaciones cumplidas sobre el total activo.</p></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600" style={{ width: `${summary.compliance_percentage}%` }} /></div></section><section className="mt-6 grid gap-6 lg:grid-cols-2"><article className="rounded-lg border border-slate-200 bg-white p-6"><h2 className="text-xl font-semibold text-[#111c30]">Requieren atención</h2><p className="mt-1 text-sm text-slate-500">Vencidas y próximas a vencer dentro de 30 días.</p><ObligationList items={summary.attention_obligations} empty="No hay obligaciones que requieran atención inmediata." /></article><article className="rounded-lg border border-slate-200 bg-white p-6"><h2 className="text-xl font-semibold text-[#111c30]">Próximos vencimientos</h2><p className="mt-1 text-sm text-slate-500">Las cinco fechas límite futuras más cercanas.</p><ObligationList items={summary.upcoming_obligations} empty="No hay próximos vencimientos." /></article></section></>}</>}
+  </div></main></DashboardGate>;
 }

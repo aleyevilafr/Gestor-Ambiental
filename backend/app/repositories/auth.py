@@ -11,6 +11,9 @@ from app.models.user import User
 def get_role_by_code(db: Session, code: RoleCode) -> Role | None:
     return db.scalar(select(Role).where(Role.code == code))
 
+def get_user_by_email(db: Session, email: str) -> User | None:
+    return db.scalar(select(User).where(User.email == email))
+
 
 def add_organization(db: Session, organization: Organization) -> None:
     db.add(organization)
