@@ -8,6 +8,7 @@ from app.api.v1.routes.controls import router as controls_router
 from app.api.v1.routes.evidences import router as evidences_router
 from app.api.v1.routes.dashboard import router as dashboard_router
 from app.api.v1.routes.reports import router as reports_router
+from app.api.v1.routes.document_analysis import router as document_analysis_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -26,6 +27,7 @@ app.include_router(controls_router)
 app.include_router(evidences_router)
 app.include_router(dashboard_router)
 app.include_router(reports_router)
+app.include_router(document_analysis_router)
 
 
 @app.get("/health", tags=["system"])

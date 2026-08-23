@@ -89,3 +89,5 @@ export type DashboardSummary={total_obligations:number;compliant:number;in_progr
 export function getDashboardSummary(){return apiRequest<DashboardSummary>("/api/v1/dashboard/summary")}
 export type ComplianceReport={organization:{id:string;name:string;rut:string};generated_at:string;summary:DashboardSummary;obligations:Array<DashboardObligation & {regulatory_source:string;article:string|null;frequency:string|null;responsible:string|null;controls_count:number;evidences_count:number}>};
 export function getComplianceReport(){return apiRequest<ComplianceReport>("/api/v1/reports/compliance")}
+export type OrganizationProposal={organization_name:string|null;rut:string|null;activity_description:string|null;warnings:string[]};
+export function analyzeDocument(text:string){return apiRequest<OrganizationProposal>("/api/v1/document-analysis/extract-organization",{method:"POST",body:JSON.stringify({text})})}

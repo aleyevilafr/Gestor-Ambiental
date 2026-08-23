@@ -1,37 +1,4 @@
 "use client";
-
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { DashboardGate } from "@/components/auth/dashboard-gate";
-import { getCurrentUser, getObligations, type AuthenticatedUser, type Obligation } from "@/lib/api";
-
-const statusLabels = { PENDING: "Pendiente", IN_PROGRESS: "En proceso", COMPLIANT: "Cumplida", OVERDUE: "Vencida" };
-
-export default function ObligationsPage() {
-  const [items, setItems] = useState<Obligation[]>([]);
-  const [user, setUser] = useState<AuthenticatedUser | null>(null);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [responsible, setResponsible] = useState("");
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    Promise.all([getObligations(), getCurrentUser()])
-      .then(([obligations, currentUser]) => { setItems(obligations); setUser(currentUser); })
-      .catch(() => setError("No fue posible cargar las obligaciones."));
-  }, []);
-
-  const responsibleUsers = useMemo(() => {
-    const people = new Map<string, string>();
-    items.forEach((item) => item.responsible_user && people.set(item.responsible_user.id, item.responsible_user.name));
-    return [...people.entries()];
-  }, [items]);
-  const filtered = items.filter((item) => (!search || item.title.toLowerCase().includes(search.toLowerCase())) && (!status || item.compliance_status === status) && (!responsible || item.responsible_user_id === responsible));
-
-  return <DashboardGate><main className="min-h-screen bg-[#f7f8fa] p-6 sm:p-8"><div className="mx-auto max-w-6xl">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-semibold text-[#111c30]">Obligaciones</h1><p className="mt-2 text-slate-600">Gestiona las obligaciones ambientales de tu organización.</p></div>{user?.role === "ADMIN" && <Link className="rounded-lg bg-[#111c30] px-4 py-3 text-sm font-semibold text-white hover:bg-[#1a2943]" href="/obligations/new">Crear obligación</Link>}</div>
-    <div className="mt-8 grid gap-3 md:grid-cols-3"><input className="h-12 rounded-lg border border-slate-300 bg-white px-3 text-sm" placeholder="Buscar por título" value={search} onChange={(event) => setSearch(event.target.value)} /><select className="h-12 rounded-lg border border-slate-300 bg-white px-3 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">Todos los estados</option>{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><select className="h-12 rounded-lg border border-slate-300 bg-white px-3 text-sm" value={responsible} onChange={(event) => setResponsible(event.target.value)}><option value="">Todos los responsables</option>{responsibleUsers.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></div>
-    {error && <p className="mt-5 text-sm text-red-700" role="alert">{error}</p>}
-    <div className="mt-6 overflow-x-auto rounded-lg border border-slate-200 bg-white"><table className="min-w-full text-left text-sm"><thead className="border-b border-slate-200 text-slate-500"><tr><th className="p-4 font-medium">Título</th><th className="p-4 font-medium">Materia</th><th className="p-4 font-medium">Fuente normativa</th><th className="p-4 font-medium">Responsable</th><th className="p-4 font-medium">Fecha límite</th><th className="p-4 font-medium">Estado</th></tr></thead><tbody>{filtered.map((item) => <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50"><td className="p-4 font-medium text-[#111c30]"><Link href={`/obligations/${item.id}`}>{item.title}</Link></td><td className="p-4">{item.matter}</td><td className="p-4">{item.regulatory_source}</td><td className="p-4">{item.responsible_user?.name ?? "Sin asignar"}</td><td className="p-4">{item.deadline ?? "—"}</td><td className="p-4">{statusLabels[item.compliance_status]}</td></tr>)}</tbody></table>{!error && filtered.length === 0 && <p className="p-6 text-center text-sm text-slate-500">No hay obligaciones que coincidan con los filtros.</p>}</div>
-  </div></main></DashboardGate>;
-}
+import Link from "next/link";import {useEffect,useMemo,useState}from"react";import {DashboardGate}from"@/components/auth/dashboard-gate";import {Card,EmptyState,PageHeader,StatusBadge}from"@/components/ui/surface";import {getCurrentUser,getObligations,type AuthenticatedUser,type Obligation}from"@/lib/api";
+const labels={PENDING:"Pendiente",IN_PROGRESS:"En proceso",COMPLIANT:"Cumplida",OVERDUE:"Vencida"};const tone={PENDING:"warning",IN_PROGRESS:"info",COMPLIANT:"success",OVERDUE:"danger"}as const;
+export default function Page(){const [items,setItems]=useState<Obligation[]>([]);const [user,setUser]=useState<AuthenticatedUser|null>(null);const [search,setSearch]=useState("");const [status,setStatus]=useState("");const [responsible,setResponsible]=useState("");const [error,setError]=useState("");useEffect(()=>{Promise.all([getObligations(),getCurrentUser()]).then(([o,u])=>{setItems(o);setUser(u)}).catch(()=>setError("No fue posible cargar las obligaciones."))},[]);const people=useMemo(()=>[...new Map(items.filter(i=>i.responsible_user).map(i=>[i.responsible_user!.id,i.responsible_user!.name])).entries()],[items]);const filtered=items.filter(i=>(!search||i.title.toLowerCase().includes(search.toLowerCase()))&&(!status||i.compliance_status===status)&&(!responsible||i.responsible_user_id===responsible));return <DashboardGate><div className="mx-auto max-w-7xl space-y-6"><PageHeader title="Obligaciones" description="Gestiona las obligaciones ambientales de tu organización." action={user?.role==="ADMIN"?<Link href="/obligations/new" className="rounded-lg bg-[#111c30] px-4 py-3 text-sm font-semibold text-white">Crear obligación</Link>:undefined}/><Card className="p-4"><div className="grid gap-3 md:grid-cols-3"><input className="h-11 rounded-lg border border-slate-300 bg-slate-50 px-3" placeholder="Buscar por título" value={search} onChange={e=>setSearch(e.target.value)}/><select className="h-11 rounded-lg border border-slate-300 bg-slate-50 px-3" value={status} onChange={e=>setStatus(e.target.value)}><option value="">Todos los estados</option>{Object.entries(labels).map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><select className="h-11 rounded-lg border border-slate-300 bg-slate-50 px-3" value={responsible} onChange={e=>setResponsible(e.target.value)}><option value="">Todos los responsables</option>{people.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></div></Card>{error?<p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>:filtered.length===0?<EmptyState title={items.length===0?"Aún no hay obligaciones":"No hay resultados"} description={items.length===0?"Registra una obligación ambiental para comenzar el seguimiento.":"Prueba ajustando los filtros de búsqueda."}/>:<Card className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b bg-slate-50 text-slate-500"><tr>{["Título","Materia","Fuente normativa","Responsable","Fecha límite","Estado"].map(x=><th key={x} className="px-5 py-4 font-semibold">{x}</th>)}</tr></thead><tbody>{filtered.map(i=><tr key={i.id} className="border-b border-slate-100 hover:bg-slate-50"><td className="px-5 py-4 font-medium text-[#111c30]"><Link href={`/obligations/${i.id}`}>{i.title}</Link></td><td className="px-5 py-4">{i.matter}</td><td className="px-5 py-4">{i.regulatory_source}</td><td className="px-5 py-4">{i.responsible_user?.name??"Sin asignar"}</td><td className="px-5 py-4">{i.deadline??"—"}</td><td className="px-5 py-4"><StatusBadge tone={tone[i.compliance_status]}>{labels[i.compliance_status]}</StatusBadge></td></tr>)}</tbody></table></Card>}</div></DashboardGate>}

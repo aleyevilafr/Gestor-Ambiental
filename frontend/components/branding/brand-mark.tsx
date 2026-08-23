@@ -1,9 +1,10 @@
 type BrandMarkProps = {
   tone: "dark" | "light";
   compact?: boolean;
+  title?: string;
 };
 
-export function BrandMark({ tone, compact = false }: BrandMarkProps) {
+export function BrandMark({ tone, compact = false, title = "Plataforma de Gestión" }: BrandMarkProps) {
   const isDark = tone === "dark";
 
   return (
@@ -17,7 +18,7 @@ export function BrandMark({ tone, compact = false }: BrandMarkProps) {
         </span>
       </span>
       <span className={`text-sm font-semibold leading-tight ${isDark ? "text-white" : "text-slate-950"}`}>
-        <span className="block">Plataforma de Gestión</span>
+        <span className="block">{title}</span>
         {!compact && <span className={`block font-normal ${isDark ? "text-slate-400" : "text-slate-500"}`}>de Cumplimiento Ambiental</span>}
       </span>
     </div>

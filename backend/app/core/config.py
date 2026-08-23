@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     backend_cors_origins: list[str] = ["http://localhost:3000"]
+    ai_provider: str = "gemini"
+    ai_api_key: str | None = None
+    ai_model: str = "gemini-2.5-flash-lite"
+    ai_timeout_seconds: int = 20
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

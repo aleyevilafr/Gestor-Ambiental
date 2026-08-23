@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/api";
 import type { AuthenticatedUser } from "@/lib/api";
-import { AppNavigation } from "@/components/auth/app-navigation";
+import { AppShell } from "@/components/ui/app-shell";
 
 export function DashboardGate({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -19,5 +19,5 @@ export function DashboardGate({ children }: { children: ReactNode }) {
   if (!user) {
     return <main className="flex min-h-screen items-center justify-center bg-[#f7f8fa] px-5 text-sm text-slate-600">Verificando sesión…</main>;
   }
-  return <><AppNavigation user={user} />{children}</>;
+  return <AppShell user={user}>{children}</AppShell>;
 }
