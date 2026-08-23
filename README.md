@@ -44,6 +44,17 @@ pnpm dev
 
 Abre `http://localhost:3000` para ver la página de verificación.
 
+## Datos demo locales
+
+Para poblar manualmente una base de desarrollo vacía con datos ficticios, después de ejecutar las migraciones:
+
+```powershell
+cd backend
+python scripts/seed_demo.py
+```
+
+El script solo permite `APP_ENV=development`, no se ejecuta al iniciar la aplicación y es idempotente: si detecta la organización o los correos demo, no inserta duplicados. Las credenciales locales son `admin.demo@example.com` / `Demo2026!`.
+
 ## Autenticación
 
 - `POST /auth/register`: crea una organización y su primer usuario con rol `ADMIN` en una transacción.
