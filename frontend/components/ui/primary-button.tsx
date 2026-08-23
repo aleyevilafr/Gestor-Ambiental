@@ -9,7 +9,7 @@ type PrimaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function PrimaryButton({ children, isLoading = false, loadingLabel = "Verificando...", disabled, className = "", ...props }: PrimaryButtonProps) {
   return (
     <button
-      className={`inline-flex h-12 w-full items-center justify-center rounded-lg bg-[#111c30] px-4 text-sm font-semibold text-white transition hover:bg-[#1a2943] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 disabled:cursor-not-allowed disabled:bg-slate-400 ${className}`}
+      className={`inline-flex h-10 w-full items-center justify-center rounded-lg bg-[#111c30] px-4 text-sm font-semibold text-white transition hover:bg-[#1a2943] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-900/20 disabled:cursor-not-allowed disabled:bg-slate-400 ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >

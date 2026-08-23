@@ -147,3 +147,14 @@ def test_admin_can_activate_and_deactivate_user(client: TestClient) -> None:
     assert deactivate.json()["is_active"] is False
     assert activate.status_code == 200
     assert activate.json()["is_active"] is True
+
+
+def test_missing_session_is_rejected_and_inactive_user_cannot_log_in(client: TestClient) -> None:
+    register_admin(client)
+    user = create_user(client, "inactivo-login@empresa.cl")
+
+    assert TestClient(app).get("/auth/me").status_code == 401
+    assert client.patch(f"/api/v1/users/{user['id']}/status", json={"is_active": False}).status_code == 200
+
+    login = TestClient(app).post("/auth/login", json={"email": user["email"], "password": "ClaveSegura2026!"})
+    assert login.status_code == 401

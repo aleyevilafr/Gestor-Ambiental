@@ -9,3 +9,4 @@ pydantic-settings==2.8.1
 sqlalchemy==2.0.40
 uvicorn[standard]==0.34.0
 pytest==8.3.5
+pypdf==5.4.0

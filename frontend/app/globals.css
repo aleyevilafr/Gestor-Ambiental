@@ -14,3 +14,22 @@ body {
   color: #0f172a;
   font-family: var(--font-inter), Inter, Arial, Helvetica, sans-serif;
 }
+
+.authenticated-workspace > div.mx-auto {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.user-management-layout > section:last-child {
+  max-width: 680px;
+}
+
+.user-management-layout > section:last-child button[type="submit"] {
+  width: auto;
+}
+
+@media (max-width: 639px) {
+  .user-management-layout > section:last-child button[type="submit"] {
+    width: 100%;
+  }
+}

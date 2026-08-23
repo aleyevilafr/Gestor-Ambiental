@@ -8,11 +8,11 @@ import { AICommandBar } from "@/components/ui/ai-command-bar";
 import type { AuthenticatedUser } from "@/lib/api";
 
 export function AuthenticatedHeader({ user }: { user: AuthenticatedUser }) {
-  return <header className="no-print sticky top-0 z-20"><div className="bg-[#111c30] text-white"><div className="mx-auto flex h-16 max-w-[1360px] items-center justify-between gap-5 px-5 sm:px-8 lg:px-10"><BrandMark tone="dark" compact title="Cumplimiento Ambiental" /><div className="min-w-0 text-right text-[15px]"><p className="truncate font-medium">{user.organization.name}</p><p className="truncate text-[13px] text-slate-300">{user.name} · {user.role === "ADMIN" ? "Administrador" : user.role === "RESPONSIBLE" ? "Responsable" : "Lector"}</p></div></div></div><div className="border-b border-slate-200 bg-white"><div className="mx-auto max-w-[1360px] px-5 sm:px-8 lg:px-10"><AppNavigation user={user} /></div></div></header>;
+  return <header className="no-print sticky top-0 z-20"><div className="bg-[#111c30] text-white"><div className="mx-auto flex h-12 max-w-[1360px] items-center justify-between gap-5 px-4 md:px-6 lg:px-8"><BrandMark tone="dark" compact title="Cumplimiento Ambiental" /><div className="min-w-0 text-right text-[15px]"><p className="truncate font-medium">{user.organization.name}</p><p className="truncate text-[13px] text-slate-300">{user.name} · {user.role === "ADMIN" ? "Administrador" : user.role === "RESPONSIBLE" ? "Responsable" : "Lector"}</p></div></div></div><div className="border-b border-slate-200 bg-white"><div className="mx-auto max-w-[1360px] px-4 md:px-6 lg:px-8"><AppNavigation user={user} /></div></div></header>;
 }
 
 export function AppShell({ user, children }: { user: AuthenticatedUser; children: ReactNode }) {
   const pathname = usePathname();
   const showCommandBar = user.role === "ADMIN" && (pathname === "/dashboard" || pathname === "/organization/document-analysis");
-  return <div className="min-h-screen bg-slate-50"><AuthenticatedHeader user={user} /><AICommandBar visible={showCommandBar} /><main className="mx-auto max-w-[1360px] px-5 py-9 sm:px-8 sm:py-10 lg:px-10">{children}</main></div>;
+  return <div className="min-h-screen bg-slate-50"><AuthenticatedHeader user={user} /><AICommandBar visible={showCommandBar} compact={pathname === "/dashboard"} /><main className="authenticated-workspace mx-auto max-w-[1360px] px-4 py-8 md:px-6 lg:px-8">{children}</main></div>;
 }

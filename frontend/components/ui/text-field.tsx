@@ -20,7 +20,7 @@ export function TextField({ id, label, error, icon, trailing, className = "", ..
           id={id}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
-          className={`h-12 w-full rounded-lg border bg-white text-[15px] text-slate-950 outline-none transition placeholder:text-slate-400 focus-visible:border-slate-900 focus-visible:ring-4 focus-visible:ring-slate-900/10 ${icon ? "pl-11" : "pl-3"} ${trailing ? "pr-11" : "pr-3"} ${error ? "border-red-500 focus-visible:border-red-600 focus-visible:ring-red-600/10" : "border-slate-300 hover:border-slate-400"} ${className}`}
+          className={`h-11 w-full rounded-lg border bg-white text-[15px] text-slate-950 outline-none transition placeholder:text-slate-400 focus-visible:border-slate-900 focus-visible:ring-4 focus-visible:ring-slate-900/10 ${icon ? "pl-11" : "pl-3"} ${trailing ? "pr-11" : "pr-3"} ${error ? "border-red-500 focus-visible:border-red-600 focus-visible:ring-red-600/10" : "border-slate-300 hover:border-slate-400"} ${className}`}
           {...inputProps}
         />
         {trailing && <span className="absolute inset-y-0 right-0 flex w-11 items-center justify-center">{trailing}</span>}
