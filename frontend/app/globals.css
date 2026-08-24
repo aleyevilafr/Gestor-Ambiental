@@ -6,26 +6,35 @@
   color-scheme: light;
   --color-navy-950: #0b1220;
   --color-navy-900: #111c30;
+  --app-background: #f3f6fa;
+  --surface: #ffffff;
+  --surface-muted: #f4f7fb;
+  --border-subtle: #e2e8f0;
 }
 
 body {
   margin: 0;
-  background: #f7f8fa;
+  background: var(--app-background);
   color: #0f172a;
   font-family: Inter, Arial, Helvetica, sans-serif;
 }
 
-.authenticated-workspace > div.mx-auto {
-  margin-left: 0;
-  margin-right: 0;
+.app-workspace {
+  background: var(--app-background);
 }
 
-.user-management-layout > section:last-child {
-  max-width: 680px;
+@keyframes dashboard-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.user-management-layout > section:last-child button[type="submit"] {
-  width: auto;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media (max-width: 639px) {

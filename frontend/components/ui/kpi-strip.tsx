@@ -1,29 +1,12 @@
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 
-type KpiTone = "neutral" | "success" | "info" | "warning" | "danger";
+type KpiTone = "neutral" | "success" | "info" | "warning" | "danger" | "violet";
+type KpiMetric = { label:string; value:ReactNode; helper?:string; tone?:KpiTone; icon?:ComponentType<{className?:string}>; featured?:boolean; progress?:number };
 
-type KpiMetric = {
-  label: string;
-  value: ReactNode;
-  helper?: string;
-  tone?: KpiTone;
-};
+const color:Record<KpiTone,string>={neutral:"text-[#111c30]",success:"text-emerald-700",info:"text-sky-700",warning:"text-amber-700",danger:"text-red-700",violet:"text-violet-700"};
+const hover:Record<KpiTone,string>={neutral:"hover:border-slate-300 hover:bg-slate-50",success:"hover:border-slate-300 hover:bg-slate-50",info:"hover:border-sky-200 hover:bg-sky-50/60",warning:"hover:border-amber-200 hover:bg-amber-50/60",danger:"hover:border-red-200 hover:bg-red-50/60",violet:"hover:border-violet-200 hover:bg-violet-50/60"};
 
-const toneClasses: Record<KpiTone, string> = {
-  neutral: "text-[#111c30]",
-  success: "text-emerald-700",
-  info: "text-sky-700",
-  warning: "text-amber-700",
-  danger: "text-red-700",
-};
-
-export function KpiStrip({ metrics }: { metrics: KpiMetric[] }) {
-  const columns = metrics.length === 6 ? "lg:grid-cols-6" : "lg:grid-cols-5";
-  return <section className={`grid grid-cols-2 overflow-hidden rounded-lg border border-slate-200 bg-white sm:grid-cols-3 ${columns}`} aria-label="Resumen de cumplimiento">
-    {metrics.map((metric, index) => <div key={metric.label} className={`min-w-0 px-5 py-4 ${index > 0 ? "border-l border-slate-100" : ""}`}>
-      <p className="text-sm font-medium text-slate-500">{metric.label}</p>
-      <p className={`mt-2 text-3xl font-semibold tracking-tight ${toneClasses[metric.tone ?? "neutral"]}`}>{metric.value}</p>
-      {metric.helper && <p className="mt-1 text-xs text-slate-500">{metric.helper}</p>}
-    </div>)}
-  </section>;
+export function KpiStrip({metrics}:{metrics:KpiMetric[]}){
+ const columns=metrics.length===5?"xl:grid-cols-5":metrics.length===6?"xl:grid-cols-6":"lg:grid-cols-4";
+ return <section className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${columns}`} aria-label="Resumen de cumplimiento">{metrics.map(metric=>{const Icon=metric.icon,tone=metric.tone??"neutral";return <article key={metric.label} className={`group rounded-xl border bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,.025)] transition duration-200 ease-out motion-safe:hover:-translate-y-px motion-safe:hover:shadow-sm focus-within:ring-2 focus-within:ring-slate-900/10 ${metric.featured?"border-slate-700 bg-[#1a2943] text-white hover:border-[#22385a] hover:bg-[#203553]":"border-[var(--border-subtle)] "+hover[tone]}`}><div className="flex items-start justify-between gap-3"><div><p className={`text-sm font-medium ${metric.featured?"text-slate-300":"text-slate-500"}`}>{metric.label}</p><p className={`mt-2 text-3xl font-semibold tracking-tight ${metric.featured?"text-white":color[tone]}`}>{metric.value}</p></div>{Icon&&<span className={`grid h-9 w-9 place-items-center rounded-lg transition duration-200 ${metric.featured?"bg-white/10 text-white group-hover:bg-white/15":"bg-slate-50 "+color[tone]+" group-hover:bg-white"}`}><Icon className="h-[18px] w-[18px]"/></span>}</div>{metric.progress!==undefined&&<div className="mt-5 h-1.5 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-emerald-300" style={{width:`${metric.progress}%`}}/></div>}{metric.helper&&<p className={`mt-3 text-xs ${metric.featured?"text-slate-300":"text-slate-500"}`}>{metric.helper}</p>}</article>})}</section>;
 }
