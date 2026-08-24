@@ -87,9 +87,12 @@ export type CompliancePlanProposal={objective:string|null;assessment:string|null
 export function generateCompliancePlan(obligationId:string){return apiRequest<CompliancePlanProposal>(`/api/v1/obligations/${obligationId}/ai-compliance-plan`,{method:"POST",body:"{}"})}
 export function getEvidences(obligationId:string){return apiRequest<Evidence[]>(`/api/v1/obligations/${obligationId}/evidences`)}
 export function createEvidence(obligationId:string,payload:Record<string,unknown>){return apiRequest<Evidence>(`/api/v1/obligations/${obligationId}/evidences`,{method:"POST",body:JSON.stringify(payload)})}
-export type DashboardObligation={id:string;title:string;matter:string;deadline:string|null;compliance_status:Obligation["compliance_status"];responsible_name:string|null};
-export type DashboardSummary={total_obligations:number;compliant:number;in_progress:number;pending:number;overdue:number;compliance_percentage:number;attention_obligations:DashboardObligation[];upcoming_obligations:DashboardObligation[]};
+export type DashboardObligation={id:string;title:string;matter?:string;deadline:string|null;compliance_status:Obligation["compliance_status"];responsible_name:string|null};
+export type DashboardAttention=DashboardObligation&{attention_reason:"OVERDUE"|"DUE_SOON"|"UNASSIGNED"|"PENDING"};
+export type DashboardSummary={total_obligations:number;active:number;compliant:number;in_progress:number;pending:number;overdue:number;due_soon:number;unassigned:number;compliance_percentage:number};
 export function getDashboardSummary(){return apiRequest<DashboardSummary>("/api/v1/dashboard/summary")}
+export function getDashboardAttention(){return apiRequest<DashboardAttention[]>("/api/v1/dashboard/attention")}
+export function getDashboardUpcoming(){return apiRequest<DashboardObligation[]>("/api/v1/dashboard/upcoming")}
 export type ComplianceReport={organization:{id:string;name:string;rut:string};generated_at:string;summary:DashboardSummary;obligations:Array<DashboardObligation & {regulatory_source:string;article:string|null;frequency:string|null;responsible:string|null;controls_count:number;evidences_count:number}>};
 export function getComplianceReport(){return apiRequest<ComplianceReport>("/api/v1/reports/compliance")}
 export type OrganizationProposal={organization_name:string|null;rut:string|null;activity_description:string|null;warnings:string[]};
