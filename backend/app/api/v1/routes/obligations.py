@@ -9,12 +9,16 @@ from app.models.role import RoleCode
 from app.models.user import User
 from app.schemas.obligation import *
 from app.services import obligations as service
+from app.services import compliance_plan
+from app.schemas.compliance_plan import CompliancePlanProposal
 router=APIRouter(prefix='/api/v1/obligations',tags=['obligations'])
 Db=Annotated[Session,Depends(get_db)];Current=Annotated[User,Depends(get_current_active_user)];Admin=Annotated[User,Depends(require_roles(RoleCode.ADMIN))]
 @router.get('',response_model=list[ObligationResponse])
 def list_(u:Current,db:Db,compliance_status:ComplianceStatus|None=None,responsible_user_id:UUID|None=None,matter:str|None=None,search:str|None=None,include_archived:bool=False):return [service.out(x) for x in service.list_visible(db,u,compliance_status,responsible_user_id,matter,search,include_archived)]
 @router.get('/{id}',response_model=ObligationResponse)
 def detail(id:UUID,u:Current,db:Db):return service.out(service.get(db,u,id))
+@router.post('/{id}/ai-compliance-plan',response_model=CompliancePlanProposal)
+def ai_plan(id:UUID,u:Admin,db:Db):return compliance_plan.generate(service.get(db,u,id))
 @router.post('',response_model=ObligationResponse,status_code=201)
 def create_(p:CreateObligationRequest,u:Admin,db:Db):return service.out(service.create(db,u,p))
 @router.patch('/{id}',response_model=ObligationResponse)

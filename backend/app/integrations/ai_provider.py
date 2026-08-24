@@ -4,12 +4,14 @@ from pydantic import ValidationError
 from app.core.config import get_settings
 from app.schemas.document_analysis import OrganizationProposal
 from app.schemas.company_profile import CompanyProfileExtractionResult
+from app.schemas.compliance_plan import CompliancePlanProposal
 
 class AIProviderError(Exception): pass
 class AIProviderUnavailable(AIProviderError): pass
 
 PROMPT = """Extrae solamente datos organizacionales explícitos del texto. No inventes información, no realices análisis jurídico, no determines obligaciones ni cumplimiento. Usa null si no está presente. Devuelve JSON con organization_name, rut, activity_description y warnings (lista de incertidumbres)."""
 COMPANY_PROFILE_PROMPT = """Extrae únicamente hechos explícitos de un documento societario chileno. No inventes información, no determines vigencia jurídica, no emitas asesoría jurídica y usa null cuando falten datos. No infieras normativa. Devuelve JSON con legal_name, trade_name, rut, company_type (SPA, LIMITADA, SA_CERRADA, SA_ABIERTA, EIRL, OTHER o UNKNOWN), incorporation_date, address, commune, region, business_purpose, legal_representatives, document_date y warnings. Separa hechos detectados de advertencias."""
+COMPLIANCE_PLAN_PROMPT = """Propón un plan operativo concreto usando exclusivamente el contexto proporcionado. No inventes normativa, requisitos ni obligaciones. No declares cumplimiento o incumplimiento jurídico ni afirmes que una acción garantiza cumplimiento. Devuelve JSON con objective, assessment, recommended_actions (máximo 5: title, description, suggested_due_date, expected_evidence) y warnings. Evita recomendaciones genéricas; si falta información, indícalo en warnings."""
 
 def extract_organization(text: str) -> OrganizationProposal:
     return _extract(text, PROMPT, OrganizationProposal)
@@ -17,6 +19,9 @@ def extract_organization(text: str) -> OrganizationProposal:
 
 def extract_company_profile(text: str) -> CompanyProfileExtractionResult:
     return _extract(text, COMPANY_PROFILE_PROMPT, CompanyProfileExtractionResult)
+
+def generate_compliance_plan(context: str) -> CompliancePlanProposal:
+    return _extract(context, COMPLIANCE_PLAN_PROMPT, CompliancePlanProposal)
 
 
 def _extract(text: str, prompt: str, schema):

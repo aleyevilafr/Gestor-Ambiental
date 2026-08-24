@@ -119,3 +119,25 @@ def test_evidence_type_validation(client: TestClient, payload: dict) -> None:
     register_admin(client)
     item = obligation(client)
     assert client.post(f"/api/v1/obligations/{item['id']}/evidences", json=payload).status_code == 422
+
+
+def test_admin_generates_ephemeral_compliance_plan_and_other_roles_are_rejected(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.api.v1.routes import obligations as obligation_routes
+    from app.schemas.compliance_plan import CompliancePlanProposal
+
+    register_admin(client)
+    item = obligation(client)
+    monkeypatch.setattr(obligation_routes.compliance_plan, "generate", lambda _item: CompliancePlanProposal.model_validate({"objective": "Ordenar antecedentes", "recommended_actions": [{"title": "Consolidar registros"}]}))
+    generated = client.post(f"/api/v1/obligations/{item['id']}/ai-compliance-plan")
+    assert generated.status_code == 200
+    assert generated.json()["recommended_actions"][0]["title"] == "Consolidar registros"
+    assert client.get(f"/api/v1/obligations/{item['id']}/controls").json() == []
+
+    user(client, "responsable-plan@empresa.cl", "RESPONSIBLE")
+    user(client, "lector-plan@empresa.cl", "READER")
+    responsible = login("responsable-plan@empresa.cl")
+    reader = login("lector-plan@empresa.cl")
+    assert responsible.post(f"/api/v1/obligations/{item['id']}/ai-compliance-plan").status_code == 403
+    assert reader.post(f"/api/v1/obligations/{item['id']}/ai-compliance-plan").status_code == 403
+    responsible.close()
+    reader.close()

@@ -13,6 +13,8 @@ class ControlResponse(BaseModel):
     description: str | None
     due_date: date | None
     status: ControlStatus
+    responsible_user_id: UUID | None
+    expected_evidence: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -22,6 +24,8 @@ class CreateControlRequest(BaseModel):
     description: str | None = None
     due_date: date | None = None
     status: ControlStatus = ControlStatus.PENDING
+    responsible_user_id: UUID | None = None
+    expected_evidence: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -36,6 +40,8 @@ class UpdateControlRequest(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
     due_date: date | None = None
+    responsible_user_id: UUID | None = None
+    expected_evidence: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -45,3 +51,7 @@ class UpdateControlRequest(BaseModel):
 
 class UpdateControlStatusRequest(BaseModel):
     status: ControlStatus
+
+
+class BatchCreateControlsRequest(BaseModel):
+    actions: list[CreateControlRequest] = Field(min_length=1, max_length=5)
