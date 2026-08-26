@@ -5,11 +5,27 @@
 :root {
   color-scheme: light;
   --color-navy-950: #0b1220;
-  --color-navy-900: #111c30;
+  --color-navy-900: #0f172a;
+  --color-navy-800: #172033;
   --app-background: #f3f6fa;
-  --surface: #ffffff;
+  --surface: #fffdf8;
+  --surface-cool: #eef6fb;
+  --surface-warm: #fff8e8;
   --surface-muted: #f4f7fb;
-  --border-subtle: #e2e8f0;
+  --border-subtle: #dfe7ef;
+  --border-strong: #c9d6e2;
+  --blue-accent: #4f86b7;
+  --blue-accent-soft: #dcecf8;
+  --radius-card: 1rem;
+  --radius-panel: 1.25rem;
+  --radius-modal: 1.5rem;
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 5px rgba(15, 23, 42, 0.05), 0 8px 18px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 10px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.10), 0 24px 48px rgba(15, 23, 42, 0.10);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 20px rgba(15, 23, 42, 0.05);
+  --shadow-card-hover: 0 2px 4px rgba(15, 23, 42, 0.05), 0 12px 24px rgba(15, 23, 42, 0.07);
+  --shadow-button: 0 2px 4px rgba(15, 23, 42, 0.10), 0 6px 12px rgba(15, 23, 42, 0.08);
 }
 
 body {
@@ -21,6 +37,80 @@ body {
 
 .app-workspace {
   background: var(--app-background);
+}
+
+@layer components {
+  .app-card {
+    border-color: var(--border-subtle);
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), var(--shadow-sm);
+  }
+
+  .app-panel {
+    border-color: var(--border-subtle);
+    background: var(--surface);
+    border-radius: var(--radius-panel);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), var(--shadow-md);
+  }
+
+  .dashboard-panel {
+    border-radius: var(--radius-panel);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 2px 4px rgba(15, 23, 42, 0.04), 0 12px 30px rgba(15, 23, 42, 0.05);
+  }
+
+  .button-primary {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, #17305a 0%, #0f2345 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 4px rgba(15, 23, 42, 0.14), 0 6px 14px rgba(15, 23, 42, 0.10);
+    transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  }
+
+  .button-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, #1b3969 0%, #10294f 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 8px rgba(15, 23, 42, 0.15), 0 8px 18px rgba(15, 23, 42, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .button-primary:active:not(:disabled) {
+    box-shadow: inset 0 1px 3px rgba(6, 18, 37, 0.30), 0 1px 2px rgba(15, 23, 42, 0.10);
+    transform: translateY(0);
+  }
+
+  .button-secondary {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), var(--shadow-xs);
+    transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  }
+
+  .button-secondary:hover:not(:disabled) {
+    border-color: var(--blue-accent);
+    background: var(--surface-cool);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), var(--shadow-sm);
+    transform: translateY(-1px);
+  }
+
+  .button-secondary:active:not(:disabled) { transform: translateY(0); box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.10); }
+
+  .control-field {
+    border-color: var(--border-strong);
+    background: #fff;
+    box-shadow: inset 0 1px 1px rgba(15, 23, 42, 0.025);
+  }
+
+  .control-field:hover { border-color: #aebfce; }
+  .control-field:focus-visible { border-color: var(--color-navy-900); box-shadow: 0 0 0 4px rgba(79, 134, 183, 0.15); }
+
+  .icon-button {
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-cool);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), var(--shadow-xs);
+    transition: transform 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .icon-button:hover { border-color: var(--blue-accent); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), var(--shadow-sm); transform: translateY(-1px); }
+  .icon-button:active { box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.10); transform: translateY(0); }
 }
 
 @keyframes dashboard-enter {
