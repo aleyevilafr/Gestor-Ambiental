@@ -69,7 +69,7 @@ export function updateUser(userId: string, payload: Partial<Pick<OrganizationUse
 export function updateUserStatus(userId: string, is_active: boolean) {
   return apiRequest<OrganizationUser>(`/api/v1/users/${userId}/status`, { method: "PATCH", body: JSON.stringify({ is_active }) });
 }
-export type Obligation={id:string;title:string;description:string|null;matter:string;regulatory_source:string;article:string|null;deadline:string|null;frequency:string|null;compliance_status:"PENDING"|"IN_PROGRESS"|"COMPLIANT"|"OVERDUE";responsible_user_id:string|null;responsible_user:{id:string;name:string;email:string}|null;is_active:boolean;created_at:string;updated_at:string};
+export type Obligation={id:string;title:string;description:string|null;matter:string;regulatory_source:string;article:string|null;deadline:string|null;frequency:string|null;compliance_status:"PENDING"|"IN_PROGRESS"|"COMPLIANT"|"OVERDUE";responsible_user_id:string|null;responsible_user:{id:string;name:string;email:string}|null;created_by_user_id:string;is_active:boolean;created_at:string;updated_at:string};
 export function getObligations(filters=""){return apiRequest<Obligation[]>(`/api/v1/obligations${filters}`)}
 export function getObligation(id:string){return apiRequest<Obligation>(`/api/v1/obligations/${id}`)}
 export function createObligation(payload:Record<string,unknown>){return apiRequest<Obligation>("/api/v1/obligations",{method:"POST",body:JSON.stringify(payload)})}
