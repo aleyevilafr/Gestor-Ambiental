@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 from app.db.session import SessionLocal
 from app.main import app
-pytestmark=pytest.mark.skipif(os.getenv("RUN_POSTGRES_INTEGRATION_TESTS")!="1",reason="Define RUN_POSTGRES_INTEGRATION_TESTS=1")
+pytestmark=pytest.mark.skipif(os.getenv("RUN_POSTGRES_INTEGRATION_TESTS")!="1",reason="Define RUN_POSTGRES_INTEGRATION_TESTS=1 y TEST_DATABASE_URL")
 @pytest.fixture(autouse=True)
 def clean_data()->Generator[None,None,None]:
  db=SessionLocal();db.execute(text("TRUNCATE TABLE evidences, controls, obligations, users, organizations CASCADE"));db.commit();db.close();yield

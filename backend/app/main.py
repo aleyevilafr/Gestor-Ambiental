@@ -9,6 +9,7 @@ from app.api.v1.routes.evidences import router as evidences_router
 from app.api.v1.routes.dashboard import router as dashboard_router
 from app.api.v1.routes.reports import router as reports_router
 from app.api.v1.routes.document_analysis import router as document_analysis_router
+from app.api.v1.routes.ai import router as ai_router
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -18,7 +19,7 @@ app.add_middleware(
     allow_origins=settings.backend_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "X-Document-Name"],
 )
 app.include_router(auth_router, prefix="/auth")
 app.include_router(users_router)
@@ -28,6 +29,7 @@ app.include_router(evidences_router)
 app.include_router(dashboard_router)
 app.include_router(reports_router)
 app.include_router(document_analysis_router)
+app.include_router(ai_router)
 
 
 @app.get("/health", tags=["system"])

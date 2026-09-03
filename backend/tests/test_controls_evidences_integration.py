@@ -9,7 +9,7 @@ from app.db.session import SessionLocal
 from app.main import app
 
 
-pytestmark = pytest.mark.skipif(os.getenv("RUN_POSTGRES_INTEGRATION_TESTS") != "1", reason="Define RUN_POSTGRES_INTEGRATION_TESTS=1 y DATABASE_URL para ejecutar pruebas PostgreSQL.")
+pytestmark = pytest.mark.skipif(os.getenv("RUN_POSTGRES_INTEGRATION_TESTS") != "1", reason="Define RUN_POSTGRES_INTEGRATION_TESTS=1 y TEST_DATABASE_URL para ejecutar pruebas PostgreSQL.")
 
 
 @pytest.fixture(autouse=True)
@@ -67,6 +67,22 @@ def test_admin_creates_lists_and_changes_control_status(client: TestClient) -> N
     assert changed.status_code == 200 and changed.json()["status"] == "COMPLETED"
 
 
+def test_admin_updates_control_fields(client: TestClient) -> None:
+    register_admin(client)
+    item = obligation(client)
+    created = control(client, item["id"])
+
+    updated = client.patch(
+        f"/api/v1/controls/{created['id']}",
+        json={"title": "Validar manifiestos", "description": "Revisión previa", "due_date": "2026-12-10"},
+    )
+
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["title"] == "Validar manifiestos"
+    assert updated.json()["description"] == "Revisión previa"
+    assert updated.json()["due_date"] == "2026-12-10"
+
+
 def test_assigned_responsible_manages_control_but_unassigned_is_rejected(client: TestClient) -> None:
     register_admin(client)
     responsible = user(client, "responsable@empresa.cl", "RESPONSIBLE")
@@ -75,6 +91,8 @@ def test_assigned_responsible_manages_control_but_unassigned_is_rejected(client:
     assigned_control = control(client, assigned["id"])
     responsible_client = login("responsable@empresa.cl")
 
+    assert responsible_client.get(f"/api/v1/obligations/{assigned['id']}/controls").status_code == 200
+    assert responsible_client.get(f"/api/v1/obligations/{other['id']}/controls").status_code == 403
     assert responsible_client.post(f"/api/v1/obligations/{assigned['id']}/controls", json={"title": "Control responsable"}).status_code == 201
     assert responsible_client.patch(f"/api/v1/controls/{assigned_control['id']}", json={"title": "Actualizado"}).status_code == 200
     assert responsible_client.post(f"/api/v1/obligations/{other['id']}/controls", json={"title": "No permitido"}).status_code == 403
@@ -87,6 +105,7 @@ def test_reader_cannot_modify_and_external_organization_returns_404(client: Test
     existing_control = control(client, item["id"])
     user(client, "lector@empresa.cl", "READER")
     reader = login("lector@empresa.cl")
+    assert reader.post(f"/api/v1/obligations/{item['id']}/controls", json={"title": "No"}).status_code == 403
     assert reader.patch(f"/api/v1/controls/{existing_control['id']}", json={"title": "No"}).status_code == 403
     reader.close()
 
@@ -95,6 +114,16 @@ def test_reader_cannot_modify_and_external_organization_returns_404(client: Test
     assert other.get(f"/api/v1/obligations/{item['id']}/controls").status_code == 404
     assert other.patch(f"/api/v1/controls/{existing_control['id']}", json={"title": "No"}).status_code == 404
     other.close()
+
+
+def test_unknown_obligation_control_and_invalid_status_are_rejected(client: TestClient) -> None:
+    register_admin(client)
+    item = obligation(client)
+    created = control(client, item["id"])
+
+    assert client.get("/api/v1/obligations/00000000-0000-0000-0000-000000000001/controls").status_code == 404
+    assert client.patch("/api/v1/controls/00000000-0000-0000-0000-000000000001", json={"title": "No"}).status_code == 404
+    assert client.patch(f"/api/v1/controls/{created['id']}/status", json={"status": "INVALID"}).status_code == 422
 
 
 def test_external_evidence_can_be_linked_to_control_or_directly_to_obligation(client: TestClient) -> None:

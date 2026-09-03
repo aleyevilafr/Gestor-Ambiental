@@ -2,6 +2,7 @@ import { StatusBadge } from "@/components/ui/surface";
 import type { AuthenticatedUser, Obligation, OrganizationUser } from "@/lib/api";
 
 import { useObligationRowEdit } from "./use-obligation-row-edit";
+import { deadlineSignal, formatDeadline } from "./obligation-table.utils";
 
 const labels = {
   PENDING: "Pendiente",
@@ -51,6 +52,8 @@ export function ObligationTableRow({
     onFinished,
     onUpdated,
   });
+  const deadline = deadlineSignal(obligation);
+  const needsAttention = deadline.kind !== "none" || !obligation.responsible_user_id;
 
   return (
     <tr
@@ -58,7 +61,7 @@ export function ObligationTableRow({
         editing ? "bg-[#f2f7fc]" : "hover:bg-[var(--surface-cool)]"
       }`}
     >
-      <td className="px-5 py-4 font-semibold text-[#111c30]">
+      <td className={`border-l-[3px] px-5 py-4 font-semibold text-[#111c30] ${deadline.kind === "overdue" ? "border-red-300" : deadline.kind === "due-soon" ? "border-amber-300" : !obligation.responsible_user_id && needsAttention ? "border-violet-300" : "border-transparent"}`}>
         {editing ? (
           <input
             aria-label={`Nombre de ${obligation.title}`}
@@ -77,7 +80,7 @@ export function ObligationTableRow({
           </button>
         )}
       </td>
-      <td className="px-5 py-4 text-slate-700">{obligation.matter}</td>
+      <td className="px-5 py-4 text-slate-700"><span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{obligation.matter}</span></td>
       <td className="px-5 py-4">
         {editing ? (
           <select
@@ -118,7 +121,7 @@ export function ObligationTableRow({
             ))}
           </select>
         ) : (
-          obligation.responsible_user?.name ?? "Sin asignar"
+          obligation.responsible_user?.name ?? <span className="font-medium text-violet-700">Sin responsable</span>
         )}
       </td>
       <td className="px-5 py-4 text-slate-700">
@@ -132,7 +135,7 @@ export function ObligationTableRow({
             value={draft.deadline}
           />
         ) : (
-          obligation.deadline ?? "—"
+          <div><span>{formatDeadline(obligation.deadline)}</span>{deadline.label ? <small className={`mt-1 block text-xs font-medium ${deadline.kind === "overdue" ? "text-red-700" : "text-amber-700"}`}>{deadline.label}</small> : null}</div>
         )}
       </td>
       <td className="max-w-[240px] truncate px-5 py-4 text-slate-700">

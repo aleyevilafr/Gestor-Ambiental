@@ -11,7 +11,7 @@ from app.main import app
 
 pytestmark = pytest.mark.skipif(
     os.getenv("RUN_POSTGRES_INTEGRATION_TESTS") != "1",
-    reason="Define RUN_POSTGRES_INTEGRATION_TESTS=1 y DATABASE_URL para ejecutar pruebas PostgreSQL.",
+    reason="Define RUN_POSTGRES_INTEGRATION_TESTS=1 y TEST_DATABASE_URL para ejecutar pruebas PostgreSQL.",
 )
 
 
