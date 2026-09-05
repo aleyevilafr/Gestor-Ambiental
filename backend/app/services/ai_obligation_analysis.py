@@ -1,9 +1,11 @@
 from pathlib import PurePath
+import logging
+from app.core.config import get_settings
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 
-from app.integrations.ai_provider import AIProviderTimeout, AIProviderUnavailable, analyze_obligations
+from app.integrations.ai_provider import AIProviderTimeout, AIProviderUnavailable, AIProviderInvalidResponse, analyze_obligations
 from app.schemas.ai_obligation_analysis import (
     AIObligationAnalysisResponse,
     AIObligationProposal,
@@ -20,12 +22,16 @@ def analyze_document(content: bytes, content_type: str, document_name: str | Non
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Solo se aceptan documentos PDF o TXT.")
 
     text = _extract_text(content, normalized_content_type)
+    if get_settings().app_env == "development":
+        logging.getLogger(__name__).warning('[AI] file validated; text extracted length=%s', len(text))
     try:
         raw = analyze_obligations(text)
     except AIProviderTimeout as error:
         raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, str(error)) from error
     except AIProviderUnavailable as error:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(error)) from error
+    except AIProviderInvalidResponse as error:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(error)) from error
 
     warnings = [warning.strip() for warning in raw.warnings if warning.strip()][:20]
     proposals: list[AIObligationProposal] = []
@@ -35,6 +41,8 @@ def analyze_document(content: bytes, content_type: str, document_name: str | Non
         except ValidationError:
             warnings.append(f"La propuesta {position} no contiene los datos mínimos y fue descartada.")
 
+    if get_settings().app_env == "development":
+        logging.getLogger(__name__).warning('[AI] proposals valid=%s', len(proposals))
     return AIObligationAnalysisResponse(
         document_name=_document_name(document_name, normalized_content_type),
         proposals=proposals,

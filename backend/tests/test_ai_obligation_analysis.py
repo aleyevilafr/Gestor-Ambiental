@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from fastapi import HTTPException
 
-from app.integrations.ai_provider import AIProviderTimeout, AIProviderUnavailable
+from app.integrations.ai_provider import AIProviderTimeout, AIProviderUnavailable, AIProviderInvalidResponse
 from app.schemas.ai_obligation_analysis import AIObligationAnalysisRawResponse
 from app.services import ai_obligation_analysis as service
 
@@ -75,6 +75,7 @@ def test_invalid_external_proposal_is_discarded_with_warning(monkeypatch: pytest
     [
         (AIProviderTimeout("Tiempo agotado"), 504),
         (AIProviderUnavailable("Sin API key"), 503),
+        (AIProviderInvalidResponse("JSON inválido"), 502),
     ],
 )
 def test_external_provider_errors_are_controlled(monkeypatch: pytest.MonkeyPatch, error: Exception, expected_status: int) -> None:

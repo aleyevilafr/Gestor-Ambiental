@@ -1,0 +1,20 @@
+INFO:     Started server process [25908]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[AI] endpoint entered app_env=development provider=gemini model=gemini-3.5-flash-lite key_loaded=True timeout=20
+[AI] file validated; text extracted length=203
+[AI] provider called model=gemini-3.5-flash-lite provider=gemini key_loaded=True timeout=20
+[AI] url=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent
+[AI] gemini status=200
+[AI] parsed response
+[AI] proposals valid=1
+[AI] endpoint success
+[AI] endpoint entered app_env=development provider=gemini model=gemini-3.5-flash-lite key_loaded=True timeout=20
+[AI] file validated; text extracted length=201
+[AI] provider called model=gemini-3.5-flash-lite provider=gemini key_loaded=True timeout=20
+[AI] url=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent
+[AI] gemini status=200
+[AI] parsed response
+[AI] proposals valid=1
+[AI] endpoint success

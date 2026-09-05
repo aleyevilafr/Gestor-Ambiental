@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { analyzeObligations, createObligation, type AIObligationProposal, type Obligation } from "@/lib/api";
 
-import { normalizeTitle, toReviewProposal, type ReviewProposal } from "./obligation-analysis.types";
+import { hasMissingRequiredFields, normalizeTitle, toReviewProposal, type ReviewProposal } from "./obligation-analysis.types";
 
 export type AnalysisPhase = "idle" | "analyzing" | "success" | "error" | "creating";
 
@@ -50,7 +50,7 @@ export function useObligationAnalysis(existingTitles: string[], onCreated: (obli
 
   const incorporate = async () => {
     const selected = proposals.filter((proposal) => proposal.selected && !proposal.incorporated);
-    if (!selected.length) return;
+    if (!selected.length || selected.some(hasMissingRequiredFields)) return;
     setPhase("creating");
     setError("");
     const created: Obligation[] = [];
@@ -58,16 +58,12 @@ export function useObligationAnalysis(existingTitles: string[], onCreated: (obli
     const successfulIds = new Set<string>();
 
     for (const proposal of selected) {
-      if (!proposal.title.trim() || !proposal.matter?.trim() || !proposal.regulatory_source?.trim()) {
-        failures.push(`${proposal.title || "Una propuesta"}: completa título, materia y fuente normativa.`);
-        continue;
-      }
       try {
         const obligation = await createObligation({
           title: proposal.title.trim(),
           description: proposal.description?.trim() || null,
-          matter: proposal.matter.trim(),
-          regulatory_source: proposal.regulatory_source.trim(),
+          matter: proposal.matter!.trim(),
+          regulatory_source: proposal.regulatory_source!.trim(),
           article: proposal.article?.trim() || null,
           deadline: proposal.deadline || null,
           frequency: proposal.frequency?.trim() || null,

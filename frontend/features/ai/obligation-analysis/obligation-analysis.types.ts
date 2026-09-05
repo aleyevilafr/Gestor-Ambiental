@@ -7,6 +7,10 @@ export type ReviewProposal = AIObligationProposal & {
   duplicate: boolean;
 };
 
+export function hasMissingRequiredFields(proposal: AIObligationProposal) {
+  return !proposal.title.trim() || !proposal.matter?.trim() || !proposal.regulatory_source?.trim();
+}
+
 export function normalizeTitle(value: string) {
   return value.trim().toLocaleLowerCase("es-CL").replace(/\s+/g, " ");
 }
