@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 
-import {
-  updateObligation,
-  updateObligationStatus,
-  type Obligation,
-} from "@/lib/api";
+import type { Obligation } from "@/lib/api";
+import { saveObligationChanges, reconciledMessage, unverifiedMessage, type ObligationSaveResult } from "../save-obligation";
 
 type Draft = {
   title: string;
@@ -26,13 +23,13 @@ export function useObligationRowEdit({
   obligation,
   canAssign,
   editing,
-  onUpdated,
+  onSaveResult,
   onFinished,
 }: {
   obligation: Obligation;
   canAssign: boolean;
   editing: boolean;
-  onUpdated: (obligation: Obligation) => void;
+  onSaveResult: (result: ObligationSaveResult) => void;
   onFinished: () => void;
 }) {
   const [draft, setDraft] = useState<Draft>(() => draftFrom(obligation));
@@ -41,7 +38,6 @@ export function useObligationRowEdit({
 
   useEffect(() => {
     setDraft(draftFrom(obligation));
-    setError("");
   }, [obligation]);
 
   useEffect(() => {
@@ -81,17 +77,11 @@ export function useObligationRowEdit({
       if (canAssign && draft.responsible_user_id !== obligation.responsible_user_id) {
         payload.responsible_user_id = draft.responsible_user_id;
       }
-      let updated = obligation;
-      if (Object.keys(payload).length > 0) {
-        updated = await updateObligation(obligation.id, payload);
-      }
-      if (draft.compliance_status !== obligation.compliance_status) {
-        updated = await updateObligationStatus(obligation.id, draft.compliance_status);
-      }
-      onUpdated(updated);
-      onFinished();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No fue posible guardar los cambios.");
+      const result = await saveObligationChanges(obligation, payload, draft.compliance_status);
+      if (result.kind !== "unverified") setDraft(draftFrom(result.obligation));
+      setError(result.kind === "saved" ? "" : result.kind === "reconciled" ? reconciledMessage : unverifiedMessage);
+      onSaveResult(result);
+      if (result.kind === "saved") onFinished();
     } finally {
       setSaving(false);
     }

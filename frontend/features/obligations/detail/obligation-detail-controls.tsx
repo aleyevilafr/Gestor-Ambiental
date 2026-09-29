@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Control, Obligation } from "@/lib/api";
 import { emptyControlDraft, type ControlDraft } from "@/features/controls/controls.types";
 import { useObligationControls } from "@/features/controls/use-obligation-controls";
+
+import { useModalActivity } from "./obligation-modal-activity";
 
 import { ObligationControlItem } from "./obligation-control-item";
 
@@ -15,6 +17,9 @@ export function ObligationDetailControls({ obligation, editable }: { obligation:
   const [creatingControl, setCreatingControl] = useState(false);
   const [formError, setFormError] = useState("");
 
+  const savingRef = useRef(false);
+  useModalActivity("control:new", creating && JSON.stringify(draft) !== JSON.stringify(emptyControlDraft()), creatingControl);
+
   const completed = controls.filter((control) => control.status === "COMPLETED").length;
   const setField = <K extends keyof ControlDraft>(field: K, value: ControlDraft[K]) => setDraft((current) => ({ ...current, [field]: value }));
   const cancelCreate = () => {
@@ -23,10 +28,12 @@ export function ObligationDetailControls({ obligation, editable }: { obligation:
     setFormError("");
   };
   const submitCreate = async () => {
+    if (savingRef.current) return;
     if (!draft.title.trim()) {
       setFormError("El título es obligatorio.");
       return;
     }
+    savingRef.current = true;
     setCreatingControl(true);
     setFormError("");
     try {
@@ -35,6 +42,7 @@ export function ObligationDetailControls({ obligation, editable }: { obligation:
     } catch (createError) {
       setFormError(createError instanceof Error ? createError.message : "No fue posible crear el control.");
     } finally {
+      savingRef.current = false;
       setCreatingControl(false);
     }
   };
@@ -60,7 +68,7 @@ export function ObligationDetailControls({ obligation, editable }: { obligation:
             <label><span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Estado</span><select className="control-field h-9 w-full rounded-[8px] border px-2.5 text-sm" disabled={creatingControl} onChange={(event) => setField("status", event.target.value as Control["status"])} value={draft.status}><option value="PENDING">Pendiente</option><option value="IN_PROGRESS">En proceso</option><option value="COMPLETED">Completado</option></select></label>
             <label className="sm:col-span-2"><span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Descripción</span><textarea className="control-field min-h-16 w-full resize-y rounded-[8px] border px-2.5 py-2 text-sm" disabled={creatingControl} onChange={(event) => setField("description", event.target.value)} value={draft.description} /></label>
           </div>
-          {formError ? <p className="mt-2 text-xs text-red-700">{formError}</p> : null}
+          {formError ? <p role="alert" className="mt-2 text-xs text-red-700">{formError}</p> : null}
           <div className="mt-3 flex justify-end gap-2"><button className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white" disabled={creatingControl} onClick={cancelCreate} type="button">Cancelar</button><button className="button-primary rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60" disabled={creatingControl} onClick={() => void submitCreate()} type="button">{creatingControl ? "Creando..." : "Crear control"}</button></div>
         </div>
       ) : null}

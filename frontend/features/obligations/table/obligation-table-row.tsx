@@ -1,5 +1,6 @@
 import { StatusBadge } from "@/components/ui/surface";
 import type { AuthenticatedUser, Obligation, OrganizationUser } from "@/lib/api";
+import type { ObligationSaveResult } from "../save-obligation";
 
 import { useObligationRowEdit } from "./use-obligation-row-edit";
 import { deadlineSignal, formatDeadline } from "./obligation-table.utils";
@@ -27,7 +28,7 @@ export function ObligationTableRow({
   editing,
   onEdit,
   onFinished,
-  onUpdated,
+  onSaveResult,
   onOpenDetail,
 }: {
   obligation: Obligation;
@@ -36,7 +37,7 @@ export function ObligationTableRow({
   editing: boolean;
   onEdit: () => void;
   onFinished: () => void;
-  onUpdated: (obligation: Obligation) => void;
+  onSaveResult: (result: ObligationSaveResult) => void;
   onOpenDetail: (obligation: Obligation) => void;
 }) {
   const canEdit = Boolean(
@@ -50,7 +51,7 @@ export function ObligationTableRow({
     canAssign,
     editing,
     onFinished,
-    onUpdated,
+    onSaveResult,
   });
   const deadline = deadlineSignal(obligation);
   const needsAttention = deadline.kind !== "none" || !obligation.responsible_user_id;

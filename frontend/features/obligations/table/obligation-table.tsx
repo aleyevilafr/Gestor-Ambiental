@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import type { AuthenticatedUser, Obligation, OrganizationUser } from "@/lib/api";
+import type { ObligationSaveResult } from "../save-obligation";
 
 import { ObligationTableRow } from "./obligation-table-row";
 import { compareOperationally, deadlineSortValue, statusLabels } from "./obligation-table.utils";
@@ -12,13 +13,13 @@ export function ObligationTable({
   items,
   user,
   users,
-  onUpdated,
+  onSaveResult,
   onOpenDetail,
 }: {
   items: Obligation[];
   user: AuthenticatedUser | null;
   users: OrganizationUser[];
-  onUpdated: (obligation: Obligation) => void;
+  onSaveResult: (result: ObligationSaveResult) => void;
   onOpenDetail: (obligation: Obligation) => void;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export function ObligationTable({
               onEdit={() => setEditingId(obligation.id)}
               onFinished={() => setEditingId(null)}
               onOpenDetail={onOpenDetail}
-              onUpdated={onUpdated}
+              onSaveResult={onSaveResult}
               user={user}
               users={eligibleUsers}
             />

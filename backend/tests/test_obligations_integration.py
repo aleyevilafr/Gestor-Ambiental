@@ -98,6 +98,9 @@ def test_responsible_only_lists_and_edits_assigned_obligations(client: TestClien
     assert allowed.status_code == 200
     assert status_changed.status_code == 200 and status_changed.json()["compliance_status"] == "IN_PROGRESS"
     assert denied.status_code == 403
+    assert responsible_client.patch(f"/api/v1/obligations/{assigned['id']}", json={"responsible_user_id": None}).status_code == 403
+    assert responsible_client.patch(f"/api/v1/obligations/{not_assigned['id']}/status", json={"compliance_status": "COMPLIANT"}).status_code == 403
+    assert client.get(f"/api/v1/obligations/{assigned['id']}").json()["responsible_user_id"] == responsible["id"]
     responsible_client.close()
 
 
@@ -126,6 +129,8 @@ def test_organization_isolation_and_responsible_validation(client: TestClient) -
     other_admin = other.get("/auth/me").json()
     assert client.post("/api/v1/obligations", json=payload(responsible_user_id=other_admin["id"])).status_code == 422
     assert other.get(f"/api/v1/obligations/{obligation['id']}").status_code == 404
+    assert other.patch(f"/api/v1/obligations/{obligation['id']}", json={"title": "No permitido"}).status_code == 404
+    assert other.patch(f"/api/v1/obligations/{obligation['id']}/status", json={"compliance_status": "COMPLIANT"}).status_code == 404
     other.close()
 
 
@@ -142,3 +147,49 @@ def test_status_change_archive_and_default_active_filter(client: TestClient) -> 
     assert archived.status_code == 200 and archived.json()["is_active"] is False
     assert active.json() == []
     assert [item["id"] for item in including_archived.json()] == [obligation["id"]]
+
+
+def test_separate_patches_success_returns_persisted_complete_obligation(client: TestClient) -> None:
+    register_admin(client)
+    obligation = create_obligation(client)
+    path = f"/api/v1/obligations/{obligation['id']}"
+    assert client.patch(path, json={"title": "Actualizada"}).status_code == 200
+    changed = client.patch(f"{path}/status", json={"compliance_status": "COMPLIANT"})
+    assert changed.status_code == 200
+    actual = client.get(path).json()
+    assert actual == changed.json()
+    assert actual["title"] == "Actualizada"
+    assert actual["compliance_status"] == "COMPLIANT"
+
+
+def test_failed_general_patch_does_not_persist(client: TestClient) -> None:
+    register_admin(client)
+    obligation = create_obligation(client)
+    path = f"/api/v1/obligations/{obligation['id']}"
+    rejected = client.patch(path, json={"title": ""})
+    assert rejected.status_code == 422
+    assert client.get(path).json() == obligation
+
+
+def test_failed_status_after_general_commit_can_be_reconciled(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    from fastapi import HTTPException
+    from app.services import obligations as service
+
+    register_admin(client)
+    obligation = create_obligation(client)
+    path = f"/api/v1/obligations/{obligation['id']}"
+    changed = client.patch(path, json={"title": "Ya persistida"})
+    assert changed.status_code == 200
+
+    def unavailable(*args, **kwargs):
+        raise HTTPException(503, "Fallo controlado de prueba")
+
+    monkeypatch.setattr(service, "change_status", unavailable)
+    failed = client.patch(f"{path}/status", json={"compliance_status": "COMPLIANT"})
+    assert failed.status_code == 503
+    # A new request/session reads PostgreSQL, not a frontend snapshot or rollback.
+    actual = client.get(path)
+    assert actual.status_code == 200
+    assert actual.json() == changed.json()
+    assert actual.json()["title"] == "Ya persistida"
+    assert actual.json()["compliance_status"] == "PENDING"

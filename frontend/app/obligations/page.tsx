@@ -10,6 +10,7 @@ import { ObligationDetailModal } from "@/features/obligations/detail/obligation-
 import { ObligationAnalysisModal } from "@/features/ai/obligation-analysis/obligation-analysis-modal";
 import { ObligationsViewSwitcher, type ObligationViewMode } from "@/features/obligations/obligations-view-switcher";
 import { ObligationTable } from "@/features/obligations/table/obligation-table";
+import { reconcileObligation, reconciledMessage, unverifiedMessage, type ObligationSaveResult } from "@/features/obligations/save-obligation";
 import { requiresAttention, statusLabels } from "@/features/obligations/table/obligation-table.utils";
 import {
   getCurrentUser,
@@ -34,6 +35,8 @@ export default function ObligationsPage() {
   const [error, setError] = useState("");
   const [selectedObligation, setSelectedObligation] = useState<Obligation | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [saveNotices, setSaveNotices] = useState<Record<string, { title: string; unverified: boolean }>>({});
+  const [verifying, setVerifying] = useState<string[]>([]);
 
   useEffect(() => {
     Promise.all([getObligations(), getCurrentUser()])
@@ -64,6 +67,7 @@ export default function ObligationsPage() {
   );
   const filtered = items.filter(
     (item) =>
+      !saveNotices[item.id]?.unverified &&
       (!search || item.title.toLowerCase().includes(search.toLowerCase())) &&
       (!status || item.compliance_status === status) &&
       (!matter || item.matter === matter) &&
@@ -81,9 +85,29 @@ export default function ObligationsPage() {
     setAttentionOnly(false);
     setUnassignedOnly(false);
   };
-  const handleUpdated = (updated: Obligation) => {
-    setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    setSelectedObligation((current) => (current?.id === updated.id ? updated : current));
+  const handleSaveResult = (result: ObligationSaveResult) => {
+    if (result.kind !== "unverified") {
+      const updated = result.obligation;
+      setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      setSelectedObligation((current) => (current?.id === updated.id ? updated : current));
+    } else {
+      // Do not expose the old snapshot as current when verification also fails.
+      setSelectedObligation((current) => (current?.id === result.id ? null : current));
+    }
+    setSaveNotices((current) => {
+      const next = { ...current };
+      if (result.kind === "saved") delete next[result.id];
+      else next[result.id] = {
+        title: result.kind === "reconciled" ? result.obligation.title : current[result.id]?.title ?? items.find((item) => item.id === result.id)?.title ?? "Obligación",
+        unverified: result.kind === "unverified",
+      };
+      return next;
+    });
+  };
+  const retryVerification = async (id: string) => {
+    setVerifying((current) => [...current, id]);
+    try { handleSaveResult(await reconcileObligation(id)); }
+    finally { setVerifying((current) => current.filter((item) => item !== id)); }
   };
   const handleOpenDetail = (obligation: Obligation) => setSelectedObligation(obligation);
   const handleCloseDetail = () => setSelectedObligation(null);
@@ -192,14 +216,26 @@ export default function ObligationsPage() {
             </div>
           ) : null}
           <p className="mt-4 text-sm text-slate-500">
-            {hasFilters ? `${filtered.length} de ${items.length}` : filtered.length} {items.length === 1 ? "obligación" : "obligaciones"}
+            {hasFilters || Object.values(saveNotices).some((notice) => notice.unverified) ? `${filtered.length} de ${items.length}` : filtered.length} {items.length === 1 ? "obligación" : "obligaciones"}
           </p>
         </Card>
 
+        {Object.entries(saveNotices).map(([id, notice]) => (
+          <div key={id} role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p><strong>{notice.title}:</strong> {notice.unverified ? unverifiedMessage : reconciledMessage}</p>
+            {notice.unverified ? (
+              <button type="button" className="mt-2 font-semibold underline disabled:opacity-60" disabled={verifying.includes(id)} onClick={() => void retryVerification(id)}>
+                {verifying.includes(id) ? "Verificando…" : "Reintentar verificación"}
+              </button>
+            ) : null}
+          </div>
+        ))}
         {error ? (
           <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </p>
+        ) : empty && Object.values(saveNotices).some((notice) => notice.unverified) ? (
+          <p className="text-sm text-slate-600">Hay obligaciones pendientes de verificación. El listado no está completo hasta confirmar su estado.</p>
         ) : empty && viewMode === "table" ? (
           <EmptyState
             description={
@@ -214,7 +250,7 @@ export default function ObligationsPage() {
             <ObligationTable
               items={filtered}
               onOpenDetail={handleOpenDetail}
-              onUpdated={handleUpdated}
+              onSaveResult={handleSaveResult}
               user={user}
               users={users}
             />
@@ -227,7 +263,7 @@ export default function ObligationsPage() {
         <ObligationDetailModal
           obligation={selectedObligation}
           onClose={handleCloseDetail}
-          onUpdated={handleUpdated}
+          onSaveResult={handleSaveResult}
           user={user}
           users={users}
         />

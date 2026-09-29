@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import type { Control } from "@/lib/api";
 import { controlStatusLabels, controlToDraft, type ControlDraft } from "@/features/controls/controls.types";
+
+import { useModalActivity } from "./obligation-modal-activity";
 
 const statusOptions: Control["status"][] = ["PENDING", "IN_PROGRESS", "COMPLETED"];
 
@@ -33,6 +35,9 @@ export function ObligationControlItem({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const savingRef = useRef(false);
+  useModalActivity(`control:${control.id}`, editing && JSON.stringify(draft) !== JSON.stringify(controlToDraft(control)), saving);
+
   const setField = <K extends keyof ControlDraft>(field: K, value: ControlDraft[K]) => {
     setDraft((current) => ({ ...current, [field]: value }));
   };
@@ -44,10 +49,12 @@ export function ObligationControlItem({
   };
 
   const save = async () => {
+    if (savingRef.current) return;
     if (!draft.title.trim()) {
       setError("El título es obligatorio.");
       return;
     }
+    savingRef.current = true;
     setSaving(true);
     setError("");
     try {
@@ -56,6 +63,7 @@ export function ObligationControlItem({
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "No fue posible guardar el control.");
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
@@ -83,7 +91,7 @@ export function ObligationControlItem({
             <textarea className="control-field min-h-16 w-full resize-y rounded-[8px] border px-2.5 py-2 text-sm" disabled={saving} onChange={(event) => setField("description", event.target.value)} value={draft.description} />
           </label>
         </div>
-        {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}
+        {error ? <p role="alert" className="mt-2 text-xs text-red-700">{error}</p> : null}
         <div className="mt-3 flex justify-end gap-2">
           <button className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white" disabled={saving} onClick={cancel} type="button">Cancelar</button>
           <button className="button-primary rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60" disabled={saving} onClick={() => void save()} type="button">{saving ? "Guardando..." : "Guardar"}</button>
@@ -105,7 +113,7 @@ export function ObligationControlItem({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${indicatorClass[control.status]}`}>{controlStatusLabels[control.status]}</span>
-        {editable ? <button className="rounded-md px-2 py-1 text-xs font-semibold text-[#254d78] hover:bg-sky-50 hover:text-[#111c30]" onClick={() => setEditing(true)} type="button">Editar</button> : null}
+        {editable ? <button className="rounded-md px-2 py-1 text-xs font-semibold text-[#254d78] hover:bg-sky-50 hover:text-[#111c30]" onClick={() => { setDraft(controlToDraft(control)); setEditing(true); }} type="button">Editar</button> : null}
       </div>
     </li>
   );
