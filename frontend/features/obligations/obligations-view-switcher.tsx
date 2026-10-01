@@ -1,4 +1,4 @@
-export type ObligationViewMode = "table" | "planner";
+export type ObligationViewMode = "table" | "planner" | "checklist";
 
 export function ObligationsViewSwitcher({
   value,
@@ -12,6 +12,7 @@ export function ObligationsViewSwitcher({
       {([
         ["table", "☷", "Tabla"],
         ["planner", "▦", "Planner"],
+        ["checklist", "☑", "Checklist"],
       ] as const).map(([mode, icon, label]) => (
         <button
           aria-pressed={value === mode}

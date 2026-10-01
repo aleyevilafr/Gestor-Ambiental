@@ -2,16 +2,16 @@
 
 import { useRef, useState } from "react";
 
-import type { Control, Obligation } from "@/lib/api";
+import type { Control } from "@/lib/api";
 import { emptyControlDraft, type ControlDraft } from "@/features/controls/controls.types";
-import { useObligationControls } from "@/features/controls/use-obligation-controls";
+import type { useObligationControls } from "@/features/controls/use-obligation-controls";
 
 import { useModalActivity } from "./obligation-modal-activity";
 
 import { ObligationControlItem } from "./obligation-control-item";
 
-export function ObligationDetailControls({ obligation, editable }: { obligation: Obligation; editable: boolean }) {
-  const { controls, create, load, loadError, loading, update } = useObligationControls(obligation.id);
+export function ObligationDetailControls({ data, editable }: { data: ReturnType<typeof useObligationControls>; editable: boolean }) {
+  const { controls, create, load, loadError, loading, update } = data;
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState<ControlDraft>(emptyControlDraft);
   const [creatingControl, setCreatingControl] = useState(false);

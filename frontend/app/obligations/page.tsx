@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DashboardGate } from "@/components/auth/dashboard-gate";
 import { Card, EmptyState, PageHeader } from "@/components/ui/surface";
 import { ObligationBoard } from "@/features/obligations/board/obligation-board";
+import { ObligationChecklist } from "@/features/obligations/checklist/obligation-checklist";
 import { ObligationDetailModal } from "@/features/obligations/detail/obligation-detail-modal";
 import { ObligationAnalysisModal } from "@/features/ai/obligation-analysis/obligation-analysis-modal";
 import { ObligationsViewSwitcher, type ObligationViewMode } from "@/features/obligations/obligations-view-switcher";
@@ -33,6 +34,8 @@ export default function ObligationsPage() {
   const [unassignedOnly, setUnassignedOnly] = useState(false);
   const [viewMode, setViewMode] = useState<ObligationViewMode>("table");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [checklistRevision, setChecklistRevision] = useState(0);
   const [selectedObligation, setSelectedObligation] = useState<Obligation | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [saveNotices, setSaveNotices] = useState<Record<string, { title: string; unverified: boolean }>>({});
@@ -47,7 +50,8 @@ export default function ObligationsPage() {
           void getUsers().then(setUsers).catch(() => setUsers([]));
         }
       })
-      .catch(() => setError("No fue posible cargar las obligaciones."));
+      .catch(() => setError("No fue posible cargar las obligaciones."))
+      .finally(() => setLoading(false));
   }, []);
 
   const people = useMemo(
@@ -110,7 +114,10 @@ export default function ObligationsPage() {
     finally { setVerifying((current) => current.filter((item) => item !== id)); }
   };
   const handleOpenDetail = (obligation: Obligation) => setSelectedObligation(obligation);
-  const handleCloseDetail = () => setSelectedObligation(null);
+  const handleCloseDetail = () => {
+    setSelectedObligation(null);
+    setChecklistRevision((value) => value + 1);
+  };
   const handleAiCreated = (created: Obligation[]) => setItems((current) => [...created, ...current]);
 
   return (
@@ -230,7 +237,7 @@ export default function ObligationsPage() {
             ) : null}
           </div>
         ))}
-        {error ? (
+        {loading ? <p role="status" className="text-sm text-slate-600">Cargando obligaciones…</p> : error ? (
           <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </p>
@@ -255,6 +262,8 @@ export default function ObligationsPage() {
               users={users}
             />
           </Card>
+        ) : viewMode === "checklist" ? (
+          <ObligationChecklist obligations={filtered} onOpenDetail={handleOpenDetail} revision={checklistRevision} />
         ) : (
           <ObligationBoard obligations={filtered} onOpenObligation={handleOpenDetail} />
         )}

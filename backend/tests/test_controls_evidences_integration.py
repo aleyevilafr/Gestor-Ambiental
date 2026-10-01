@@ -1,5 +1,6 @@
 from collections.abc import Generator
 import os
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,6 +8,7 @@ from sqlalchemy import text
 
 from app.db.session import SessionLocal
 from app.main import app
+from app.models import Control, Evidence, Obligation, User
 
 
 pytestmark = pytest.mark.skipif(os.getenv("RUN_POSTGRES_INTEGRATION_TESTS") != "1", reason="Define RUN_POSTGRES_INTEGRATION_TESTS=1 y TEST_DATABASE_URL para ejecutar pruebas PostgreSQL.")
@@ -148,6 +150,114 @@ def test_evidence_type_validation(client: TestClient, payload: dict) -> None:
     register_admin(client)
     item = obligation(client)
     assert client.post(f"/api/v1/obligations/{item['id']}/evidences", json=payload).status_code == 422
+
+
+def evidence_payload(**overrides) -> dict:
+    return {"name": "Respaldo", "evidence_type": "EXTERNAL_LINK", "external_url": "https://example.com/respaldo", **overrides}
+
+
+def test_evidence_orm_relationships_and_report_counts(client: TestClient) -> None:
+    register_admin(client)
+    item = obligation(client)
+    action = control(client, item["id"])
+    creator = client.get("/auth/me").json()
+    direct = client.post(f"/api/v1/obligations/{item['id']}/evidences", json=evidence_payload(name="General"))
+    linked = client.post(f"/api/v1/obligations/{item['id']}/evidences", json=evidence_payload(name="Específica", control_id=action["id"]))
+    assert direct.status_code == linked.status_code == 201
+    with SessionLocal() as db:
+        general = db.get(Evidence, UUID(direct.json()["id"]))
+        specific = db.get(Evidence, UUID(linked.json()["id"]))
+        stored_control = db.get(Control, UUID(action["id"]))
+        stored_obligation = db.get(Obligation, UUID(item["id"]))
+        stored_user = db.get(User, UUID(creator["id"]))
+        assert general.control is None
+        assert specific.control is stored_control
+        assert specific.obligation is general.obligation is stored_obligation
+        assert {e.id for e in stored_control.evidences} == {specific.id}
+        assert {e.id for e in stored_obligation.evidences} == {general.id, specific.id}
+        assert specific.uploaded_by_user is general.uploaded_by_user is stored_user
+        assert {e.id for e in stored_user.uploaded_evidences} == {general.id, specific.id}
+    response = client.get(f"/api/v1/obligations/{item['id']}/evidences")
+    assert response.status_code == 200
+    assert {e["name"] for e in response.json() if e["control_id"] is None} == {"General"}
+    report = client.get("/api/v1/reports/compliance")
+    assert report.status_code == 200
+    assert report.json()["obligations"][0]["evidences_count"] == 2
+
+
+@pytest.mark.parametrize("foreign_organization", [False, True])
+def test_evidence_rejects_control_of_another_obligation(client: TestClient, foreign_organization: bool) -> None:
+    register_admin(client)
+    item = obligation(client)
+    with TestClient(app) as other:
+        if foreign_organization:
+            register_admin(other, "other@empresa.cl", "76.086.428-5")
+            foreign_item = obligation(other)
+            foreign_control = control(other, foreign_item["id"])
+        else:
+            foreign_item = obligation(client)
+            foreign_control = control(client, foreign_item["id"])
+        response = client.post(f"/api/v1/obligations/{item['id']}/evidences", json=evidence_payload(control_id=foreign_control["id"]))
+        assert response.status_code == 422
+        assert response.json() == {"detail": "El control debe pertenecer a esta obligación."}
+        assert client.get(f"/api/v1/obligations/{item['id']}/evidences").json() == []
+
+
+def test_evidence_organization_isolation_for_read_and_create(client: TestClient) -> None:
+    register_admin(client)
+    item = obligation(client)
+    created = client.post(f"/api/v1/obligations/{item['id']}/evidences", json=evidence_payload())
+    assert created.status_code == 201
+    with TestClient(app) as other:
+        register_admin(other, "other@empresa.cl", "76.086.428-5")
+        other_item = obligation(other)
+        assert other.get(f"/api/v1/obligations/{item['id']}/evidences").status_code == 404
+        assert other.post(f"/api/v1/obligations/{item['id']}/evidences", json=evidence_payload()).status_code == 404
+        assert other.get(f"/api/v1/obligations/{other_item['id']}/evidences").json() == []
+    assert len(client.get(f"/api/v1/obligations/{item['id']}/evidences").json()) == 1
+
+
+def test_evidence_responsible_assigned_and_reader_permissions(client: TestClient) -> None:
+    register_admin(client)
+    responsible = user(client, "responsible@empresa.cl", "RESPONSIBLE")
+    user(client, "reader@empresa.cl", "READER")
+    assigned = obligation(client, responsible["id"])
+    unassigned = obligation(client)
+    with login("responsible@empresa.cl") as actor:
+        assert actor.post(f"/api/v1/obligations/{assigned['id']}/evidences", json=evidence_payload()).status_code == 201
+        assert actor.get(f"/api/v1/obligations/{assigned['id']}/evidences").status_code == 200
+        assert actor.get(f"/api/v1/obligations/{unassigned['id']}/evidences").status_code == 403
+        assert actor.post(f"/api/v1/obligations/{unassigned['id']}/evidences", json=evidence_payload()).status_code == 403
+    with login("reader@empresa.cl") as reader:
+        assert reader.get(f"/api/v1/obligations/{assigned['id']}/evidences").status_code == 200
+        assert reader.post(f"/api/v1/obligations/{assigned['id']}/evidences", json=evidence_payload()).status_code == 403
+
+
+@pytest.mark.parametrize("kind,url_field", [("FILE", "file_url"), ("EXTERNAL_LINK", "external_url")])
+def test_evidence_historical_types_and_server_owned_fields(client: TestClient, kind: str, url_field: str) -> None:
+    register_admin(client)
+    item = obligation(client)
+    creator = client.get("/auth/me").json()
+    forged_id = "00000000-0000-0000-0000-000000000099"
+    payload = {"name": "Respaldo", "evidence_type": kind, url_field: "https://example.com/document.pdf", "id": forged_id, "uploaded_by_user_id": forged_id, "obligation_id": forged_id, "organization_id": forged_id}
+    response = client.post(f"/api/v1/obligations/{item['id']}/evidences", json=payload)
+    assert response.status_code == 201, response.text
+    data = response.json()
+    assert data["id"] != forged_id
+    assert data["uploaded_by_user_id"] == creator["id"]
+    assert data["obligation_id"] == item["id"]
+    assert data["control_id"] is None
+    assert data["evidence_type"] == kind and data[url_field] == payload[url_field]
+    assert "password_hash" not in response.text
+    assert client.get(f"/api/v1/obligations/{item['id']}/evidences").json() == [data]
+
+
+def test_unauthenticated_evidence_access_is_rejected(client: TestClient) -> None:
+    register_admin(client)
+    item = obligation(client)
+    with TestClient(app) as anonymous:
+        assert anonymous.get(f"/api/v1/obligations/{item['id']}/evidences").status_code == 401
+        assert anonymous.post(f"/api/v1/obligations/{item['id']}/evidences", json=evidence_payload()).status_code == 401
 
 
 def test_admin_generates_ephemeral_compliance_plan_and_other_roles_are_rejected(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
